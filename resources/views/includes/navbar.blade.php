@@ -37,7 +37,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('target*') ? 'active fw-semibold text-dark border-bottom border-2 border-success' : 'text-secondary' }}"
-                        href="#">
+                        href="{{ route('target.index') }}">
                         <i class="bi bi-bullseye me-1"></i> Target
                     </a>
                 </li>

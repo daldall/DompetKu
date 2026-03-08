@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TargetController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('kategori', CategoryController::class)->except(['show']);
     Route::resource('transaksi', TransactionController::class);
+
+    Route::resource('target', TargetController::class)->except(['show']);
+    Route::post('/target/{target}/nabung', [TargetController::class, 'nabung'])->name('target.nabung');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
