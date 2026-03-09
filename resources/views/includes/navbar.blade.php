@@ -31,7 +31,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('riwayat*') ? 'active fw-semibold text-dark border-bottom border-2 border-success' : 'text-secondary' }}"
-                        href="#">
+                        href="{{ route('riwayat.index') }}">
                         <i class="bi bi-clock-history me-1"></i> Riwayat
                     </a>
                 </li>

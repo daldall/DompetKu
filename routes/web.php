@@ -3,6 +3,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RiwayatController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TargetController;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('kategori', CategoryController::class)->except(['show']);
     Route::resource('transaksi', TransactionController::class);
+    Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
+
 
     Route::resource('target', TargetController::class)->except(['show']);
     Route::post('/target/{target}/nabung', [TargetController::class, 'nabung'])->name('target.nabung');
