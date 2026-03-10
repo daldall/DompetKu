@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Target;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -98,9 +100,39 @@ class TargetController extends Controller
             'jumlah' => 'required|integer|min:1',
         ]);
 
-        $target->increment('terkumpul', $request->jumlah);
+        $userId = Auth::id();
+        $jumlah = $request->jumlah;
 
-        $pesan = 'Berhasil menabung Rp ' . number_format($request->jumlah, 0, ',', '.') . ' ke ' . $target->nama_target . '!';
+        // Cek saldo pemasukan cukup
+        if (!Category::cukupSaldo($userId, $jumlah)) {
+            $route = $request->input('from') === 'dashboard' ? 'dashboard' : 'target.index';
+            return redirect()->route($route)->with('error', 'Saldo pemasukan tidak cukup untuk menabung.');
+        }
+
+        // Kurangi saldo pemasukan
+        Category::kurangiSaldoPemasukan($userId, $jumlah);
+
+        // Buat/ambil kategori "Tabungan" otomatis
+        $kategoriTabungan = Category::firstOrCreate(
+            ['user_id' => $userId, 'nama_kategori' => 'Tabungan'],
+            ['ikon' => 'bi-piggy-bank', 'warna' => 'danger', 'saldo' => 0]
+        );
+
+        // Catat transaksi pengeluaran ke riwayat
+        Transaction::create([
+            'user_id'     => $userId,
+            'category_id' => $kategoriTabungan->id,
+            'judul'       => 'Nabung - ' . $target->nama_target,
+            'tipe'        => 'pengeluaran',
+            'jumlah'      => $jumlah,
+            'tanggal'     => now()->toDateString(),
+            'keterangan'  => 'Menabung ke target "' . $target->nama_target . '"',
+        ]);
+
+        // Tambah terkumpul di target
+        $target->increment('terkumpul', $jumlah);
+
+        $pesan = 'Berhasil menabung Rp ' . number_format($jumlah, 0, ',', '.') . ' ke ' . $target->nama_target . '!';
         $route = $request->input('from') === 'dashboard' ? 'dashboard' : 'target.index';
 
         return redirect()->route($route)->with('success', $pesan);

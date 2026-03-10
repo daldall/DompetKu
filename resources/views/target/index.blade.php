@@ -22,6 +22,13 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                <small><i class="bi bi-exclamation-circle me-1"></i> {{ session('error') }}</small>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         @if ($targets->isEmpty())
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center py-5 text-muted">
