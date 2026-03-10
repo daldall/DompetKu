@@ -10,7 +10,12 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::where('user_id', Auth::id())->latest()->paginate(5);
+        $categories = Category::where('user_id', Auth::id())
+            ->withSum(['transactions as total_pengeluaran' => function ($q) {
+                $q->where('tipe', 'pengeluaran');
+            }], 'jumlah')
+            ->latest()
+            ->paginate(5);
 
         return view('kategori.index', compact('categories'));
     }

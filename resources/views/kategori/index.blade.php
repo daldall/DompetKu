@@ -47,6 +47,8 @@
                                                 class="fw-semibold {{ $kategori->saldo >= 0 ? 'text-success' : 'text-danger' }}">Rp
                                                 {{ number_format($kategori->saldo, 0, ',', '.') }}</span></small>
                                     @else
+                                        <small class="text-muted">Total: <span class="fw-semibold text-danger">Rp
+                                                {{ number_format($kategori->total_pengeluaran ?? 0, 0, ',', '.') }}</span></small>
                                     @endif
                                 </div>
                             </div>

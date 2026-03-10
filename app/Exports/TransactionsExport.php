@@ -30,6 +30,7 @@ class TransactionsExport implements FromCollection, WithHeadings, WithMapping, W
             ->where('user_id', Auth::id())
             ->whereMonth('tanggal', $this->bulan)
             ->whereYear('tanggal', $this->tahun)
+            ->orderByRaw("FIELD(tipe, 'pemasukan', 'pengeluaran')")
             ->orderBy('tanggal', 'asc')
             ->get();
     }
@@ -66,12 +67,17 @@ class TransactionsExport implements FromCollection, WithHeadings, WithMapping, W
     {
         return [
             1 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF']
+                ],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '198754'],
+                    'startColor' => ['rgb' => '198754']
                 ],
-                'alignment' => ['horizontal' => 'center'],
+                'alignment' => [
+                    'horizontal' => 'center'
+                ],
             ],
         ];
     }
@@ -79,9 +85,18 @@ class TransactionsExport implements FromCollection, WithHeadings, WithMapping, W
     public function title(): string
     {
         $namaBulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
         ];
 
         return ($namaBulan[$this->bulan] ?? '') . ' ' . $this->tahun;
