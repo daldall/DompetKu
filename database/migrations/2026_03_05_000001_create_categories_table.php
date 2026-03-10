@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('nama_kategori');
             $table->string('ikon')->default('bi-tag-fill');
             $table->string('warna')->default('success');
+            $table->bigInteger('saldo')->default(0);
             $table->timestamps();
         });
     }

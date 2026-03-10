@@ -40,7 +40,15 @@
                                     <i
                                         class="bi {{ $kategori->ikon ?? 'bi-tag-fill' }} text-{{ $kategori->warna ?? 'success' }} fs-5"></i>
                                 </div>
-                                <span class="fw-semibold">{{ $kategori->nama_kategori }}</span>
+                                <div>
+                                    <span class="fw-semibold d-block">{{ $kategori->nama_kategori }}</span>
+                                    @if ($kategori->warna === 'success')
+                                        <small class="text-muted">Saldo: <span
+                                                class="fw-semibold {{ $kategori->saldo >= 0 ? 'text-success' : 'text-danger' }}">Rp
+                                                {{ number_format($kategori->saldo, 0, ',', '.') }}</span></small>
+                                    @else
+                                    @endif
+                                </div>
                             </div>
                             <div class="d-flex gap-1 flex-shrink-0">
                                 <a href="{{ route('kategori.edit', $kategori) }}" class="btn btn-outline-success btn-sm"
@@ -59,6 +67,12 @@
                     </div>
                 @endforeach
             </div>
+
+            @if ($categories->hasPages())
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $categories->links('pagination::bootstrap-5') }}
+                </div>
+            @endif
         @endif
     </div>
 @endsection

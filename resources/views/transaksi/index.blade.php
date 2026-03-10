@@ -84,6 +84,12 @@
                     </div>
                 @endforeach
             </div>
+
+            @if ($transactions->hasPages())
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $transactions->links('pagination::bootstrap-5') }}
+                </div>
+            @endif
         @endif
     </div>
 @endsection
