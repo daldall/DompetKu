@@ -46,7 +46,7 @@ class TransactionController extends Controller
         ]);
 
         if (!$this->saldo->prosesTransaksiBaru(Auth::id(), $data['tipe'], $data['category_id'], $data['jumlah'])) {
-            return back()->withInput()->withErrors(['jumlah' => 'Saldo tidak cukup.']);
+            return back()->withInput()->withErrors(['jumlah' => 'Saldo pemasukan tidak cukup.']);
         }
 
         $data['user_id'] = Auth::id();
@@ -93,7 +93,7 @@ class TransactionController extends Controller
         );
 
         if (!$berhasil) {
-            return back()->withInput()->withErrors(['jumlah' => 'Saldo tidak cukup.']);
+            return back()->withInput()->withErrors(['jumlah' => 'Saldo pemasukan tidak cukup.']);
         }
 
         $transaksi->update($data);

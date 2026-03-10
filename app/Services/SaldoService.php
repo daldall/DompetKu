@@ -8,16 +8,20 @@ class SaldoService
 {
     /**
      * Proses saldo saat transaksi baru dibuat.
+     * - Pemasukan: tambah saldo ke kategori pemasukan.
+     * - Pengeluaran: kurangi saldo dari total saldo pemasukan user.
      * Return false jika saldo tidak cukup.
      */
     public function prosesTransaksiBaru(int $userId, string $tipe, int $categoryId, int $jumlah): bool
     {
+        $kategori = Category::findOrFail($categoryId);
+
         if ($tipe === 'pemasukan') {
-            Category::findOrFail($categoryId)->increment('saldo', $jumlah);
+            $kategori->increment('saldo', $jumlah);
             return true;
         }
 
-        // Pengeluaran: cek dulu, baru kurangi
+        // Pengeluaran: cek total saldo pemasukan user
         if (!Category::cukupSaldo($userId, $jumlah)) {
             return false;
         }
@@ -28,12 +32,17 @@ class SaldoService
 
     /**
      * Kembalikan saldo dari transaksi yang akan diubah/dihapus.
+     * - Pemasukan: kurangi saldo kategori pemasukan.
+     * - Pengeluaran: kembalikan saldo ke kategori pemasukan user.
      */
     public function kembalikanSaldo(int $userId, string $tipe, int $categoryId, int $jumlah): void
     {
+        $kategori = Category::findOrFail($categoryId);
+
         if ($tipe === 'pemasukan') {
-            Category::findOrFail($categoryId)->decrement('saldo', $jumlah);
+            $kategori->decrement('saldo', $jumlah);
         } else {
+            // Kembalikan ke saldo pemasukan
             Category::kembalikanSaldoPemasukan($userId, $jumlah);
         }
     }

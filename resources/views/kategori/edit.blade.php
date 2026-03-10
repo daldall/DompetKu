@@ -71,6 +71,18 @@
                         </div>
                     </div>
 
+                    <div class="mb-3" id="saldo-wrapper"
+                        style="{{ old('warna', $kategori->warna) === 'danger' ? '' : 'display:none;' }}">
+                        <label for="saldo" class="form-label fw-semibold">Anggaran (Rp)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-cash-stack"></i></span>
+                            <input type="number" id="saldo" name="saldo"
+                                value="{{ old('saldo', $kategori->warna === 'danger' ? $kategori->saldo : 0) }}"
+                                min="0" class="form-control" placeholder="Contoh: 2000000">
+                        </div>
+                        <div class="form-text">Atur anggaran untuk kategori pengeluaran ini.</div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-lg me-1"></i> Update
@@ -106,6 +118,14 @@
                 btn.style.border = '3px solid #333';
                 btn.querySelector('i').classList.remove('d-none');
                 document.getElementById('warna').value = btn.dataset.warna;
+
+                // Tampilkan/sembunyikan input anggaran
+                const saldoWrapper = document.getElementById('saldo-wrapper');
+                if (btn.dataset.warna === 'danger') {
+                    saldoWrapper.style.display = '';
+                } else {
+                    saldoWrapper.style.display = 'none';
+                }
             });
         });
     </script>

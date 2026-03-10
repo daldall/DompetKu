@@ -47,6 +47,7 @@ class Category extends Model
 
     /**
      * Kurangi saldo dari kategori pemasukan user (distribusi otomatis).
+     * Digunakan untuk fitur nabung target dan pengeluaran.
      */
     public static function kurangiSaldoPemasukan(int $userId, int $jumlah): void
     {
@@ -66,13 +67,14 @@ class Category extends Model
     }
 
     /**
-     * Kembalikan saldo ke kategori pemasukan pertama milik user.
+     * Kembalikan saldo ke kategori pemasukan user (distribusi otomatis).
+     * Digunakan saat pengeluaran dihapus/diubah.
      */
     public static function kembalikanSaldoPemasukan(int $userId, int $jumlah): void
     {
         $kategori = static::where('user_id', $userId)
             ->where('warna', 'success')
-            ->orderBy('id')
+            ->orderBy('saldo', 'desc')
             ->first();
 
         if ($kategori) {

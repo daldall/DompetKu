@@ -11,9 +11,6 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::where('user_id', Auth::id())
-            ->withSum(['transactions as total_pengeluaran' => function ($q) {
-                $q->where('tipe', 'pengeluaran');
-            }], 'jumlah')
             ->latest()
             ->paginate(5);
 
@@ -31,6 +28,7 @@ class CategoryController extends Controller
             'nama_kategori' => 'required|string|max:255',
             'ikon'          => 'required|string|max:50',
             'warna'         => 'required|in:success,danger',
+            'saldo'         => 'nullable|integer|min:0',
         ]);
 
         Category::create([
@@ -38,6 +36,7 @@ class CategoryController extends Controller
             'nama_kategori' => $request->nama_kategori,
             'ikon'          => $request->ikon,
             'warna'         => $request->warna,
+            'saldo'         => $request->saldo ?? 0,
         ]);
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil ditambahkan.');
@@ -58,13 +57,22 @@ class CategoryController extends Controller
             'nama_kategori' => 'required|string|max:255',
             'ikon'          => 'required|string|max:50',
             'warna'         => 'required|in:success,danger',
+            'saldo'         => 'nullable|integer|min:0',
         ]);
 
-        $kategori->update([
+        $data = [
             'nama_kategori' => $request->nama_kategori,
             'ikon'          => $request->ikon,
             'warna'         => $request->warna,
-        ]);
+        ];
+
+        // Untuk pengeluaran, update saldo (anggaran) langsung
+        // Untuk pemasukan, saldo dikelola otomatis lewat transaksi
+        if ($request->warna === 'danger') {
+            $data['saldo'] = $request->saldo ?? 0;
+        }
+
+        $kategori->update($data);
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil diperbarui.');
     }
