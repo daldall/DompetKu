@@ -10,8 +10,9 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::where('user_id', Auth::id())
-            ->latest()
+        $categories = Category::where('user_id', Auth::user()->id)
+            ->where('nama_kategori', '!=', 'Tabungan')
+            ->orderBy('id', 'desc')
             ->paginate(5);
 
         return view('kategori.index', compact('categories'));
@@ -28,58 +29,76 @@ class CategoryController extends Controller
             'nama_kategori' => 'required|string|max:255',
             'ikon'          => 'required|string|max:50',
             'warna'         => 'required|in:success,danger',
-            'saldo'         => 'nullable|integer|min:0',
         ]);
 
-        Category::create([
-            'user_id'       => Auth::id(),
-            'nama_kategori' => $request->nama_kategori,
-            'ikon'          => $request->ikon,
-            'warna'         => $request->warna,
-            'saldo'         => $request->saldo ?? 0,
-        ]);
+        $kategori = new Category();
+        $kategori->user_id = Auth::user()->id;
+        $kategori->nama_kategori = $request->nama_kategori;
+        $kategori->ikon = $request->ikon;
+        $kategori->warna = $request->warna;
+
+        if ($request->saldo) {
+            $kategori->saldo = $request->saldo;
+        } else {
+            $kategori->saldo = 0;
+        }
+
+        $kategori->save();
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil ditambahkan.');
     }
 
-    public function edit(Category $kategori)
+    public function edit($id)
     {
-        if ($kategori->user_id !== Auth::id()) abort(403);
+        $kategori = Category::find($id);
+
+        // cek punya user bukan
+        if ($kategori->user_id != Auth::user()->id) {
+            return redirect()->back();
+        }
 
         return view('kategori.edit', compact('kategori'));
     }
 
-    public function update(Request $request, Category $kategori)
+    public function update(Request $request, $id)
     {
-        if ($kategori->user_id !== Auth::id()) abort(403);
+        $kategori = Category::find($id);
+
+        if ($kategori->user_id != Auth::user()->id) {
+            return redirect()->back();
+        }
 
         $request->validate([
             'nama_kategori' => 'required|string|max:255',
             'ikon'          => 'required|string|max:50',
             'warna'         => 'required|in:success,danger',
-            'saldo'         => 'nullable|integer|min:0',
         ]);
 
-        $data = [
-            'nama_kategori' => $request->nama_kategori,
-            'ikon'          => $request->ikon,
-            'warna'         => $request->warna,
-        ];
+        $kategori->nama_kategori = $request->nama_kategori;
+        $kategori->ikon = $request->ikon;
+        $kategori->warna = $request->warna;
 
-        // Untuk pengeluaran, update saldo (anggaran) langsung
-        // Untuk pemasukan, saldo dikelola otomatis lewat transaksi
-        if ($request->warna === 'danger') {
-            $data['saldo'] = $request->saldo ?? 0;
+        // Kalau merah berarti pengeluaran
+        if ($request->warna == 'danger') {
+            if ($request->saldo) {
+                $kategori->saldo = $request->saldo;
+            } else {
+                $kategori->saldo = 0;
+            }
         }
 
-        $kategori->update($data);
+        $kategori->save();
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil diperbarui.');
     }
 
-    public function destroy(Category $kategori)
+    public function destroy($id)
     {
-        if ($kategori->user_id !== Auth::id()) abort(403);
+        $kategori = Category::find($id);
+
+        if ($kategori->user_id != Auth::user()->id) {
+            return redirect()->back();
+        }
 
         $kategori->delete();
 

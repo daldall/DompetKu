@@ -12,31 +12,50 @@ class RiwayatController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::with('category')
-            ->where('user_id', Auth::id())
-            ->latest('tanggal');
+        $user_id = Auth::user()->id;
 
-        if ($request->filled('tipe') && in_array($request->tipe, ['pemasukan', 'pengeluaran'])) {
-            $query->where('tipe', $request->tipe);
+        $query = Transaction::with('category')->where('user_id', $user_id);
+
+        // Filter tipe
+        if ($request->tipe != null) {
+            if ($request->tipe == 'pemasukan' || $request->tipe == 'pengeluaran') {
+                $query = $query->where('tipe', $request->tipe);
+            }
         }
 
-        if ($request->filled('tanggal_dari')) {
-            $query->whereDate('tanggal', '>=', $request->tanggal_dari);
+        // Filter tanggal dari
+        if ($request->tanggal_dari != null) {
+            $query = $query->whereDate('tanggal', '>=', $request->tanggal_dari);
         }
 
-        if ($request->filled('tanggal_sampai')) {
-            $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
+        // Filter tanggal sampai
+        if ($request->tanggal_sampai != null) {
+            $query = $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         }
 
-        if ($request->filled('search')) {
-            $query->where('judul', 'like', '%' . $request->search . '%');
+        // Filter search
+        if ($request->search != null) {
+            $query = $query->where('judul', 'like', '%' . $request->search . '%');
         }
 
-        $totalTransaksi   = (clone $query)->count();
-        $totalPemasukan   = (clone $query)->where('tipe', 'pemasukan')->sum('jumlah');
-        $totalPengeluaran = (clone $query)->where('tipe', 'pengeluaran')->sum('jumlah');
+        $query = $query->orderBy('tanggal', 'desc');
 
-        $transactions = $query->paginate(5)->withQueryString();
+        // Untuk total
+        $semua_transaksi = $query->get();
+        $totalTransaksi = count($semua_transaksi);
+
+        $totalPemasukan = 0;
+        $totalPengeluaran = 0;
+        foreach($semua_transaksi as $trx) {
+            if ($trx->tipe == 'pemasukan') {
+                $totalPemasukan = $totalPemasukan + $trx->jumlah;
+            } else {
+                $totalPengeluaran = $totalPengeluaran + $trx->jumlah;
+            }
+        }
+
+        $transactions = $query->paginate(5);
+        $transactions->appends($request->all());
 
         return view('riwayat.index', compact(
             'transactions',
@@ -49,21 +68,19 @@ class RiwayatController extends Controller
     public function export(Request $request)
     {
         $request->validate([
-            'bulan' => 'required|integer|min:1|max:12',
-            'tahun' => 'required|integer|min:2000|max:2100',
+            'bulan' => 'required',
+            'tahun' => 'required',
         ]);
 
-        $bulan = (int) $request->bulan;
-        $tahun = (int) $request->tahun;
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
 
-        $namaBulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-        ];
+        // Bikin array nama bulan
+        $namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        $nama_pilih = $namaBulan[$bulan - 1];
 
-        $fileName = 'Transaksi_' . $namaBulan[$bulan] . '_' . $tahun . '.xlsx';
+        $namaFile = 'Transaksi_' . $nama_pilih . '_' . $tahun . '.xlsx';
 
-        return Excel::download(new TransactionsExport($bulan, $tahun), $fileName);
+        return Excel::download(new TransactionsExport($bulan, $tahun), $namaFile);
     }
 }
