@@ -135,6 +135,18 @@ class TargetController extends Controller
         $jumlah = $request->jumlah;
         $user_id = Auth::user()->id;
 
+        $sisa_target = $target->target_nominal - $target->terkumpul;
+        if ($jumlah > $sisa_target) {
+            $sisa_rp = number_format($sisa_target, 0, ',', '.');
+            $pesan = "Nominal kelebihan! Sisa target tabungan ini hanya sisa Rp {$sisa_rp}.";
+            
+            if ($request->input('from') == 'dashboard') {
+                return redirect()->route('dashboard')->with('error', $pesan);
+            } else {
+                return redirect()->route('target.index')->with('error', $pesan);
+            }
+        }
+
         // Cek saldo pemasukan dulu
         $trx_banyak_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->get();
         $total_pemasukan = 0;

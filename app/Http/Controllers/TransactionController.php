@@ -32,27 +32,49 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'judul'       => 'required',
+            'judul'       => 'required|string|max:255',
             'tipe'        => 'required|in:pemasukan,pengeluaran',
-            'category_id' => 'required',
-            'jumlah'      => 'required|integer|min:1',
-            'tanggal'     => 'required|date',
+            'category_id' => [
+                'required',
+                // Pastikan kategori ada dan milik user yang sedang login (Cegah IDOR / Inspect Element Hack)
+                function ($attribute, $value, $fail) {
+                    $exists = Category::where('id', $value)->where('user_id', Auth::user()->id)->exists();
+                    if (!$exists) {
+                        $fail('Kategori yang dipilih tidak valid atau bukan milik Anda.');
+                    }
+                },
+            ],
+            // Mencegah nilai angka terlalu besar hingga error database (max 999 Miliar)
+            'jumlah'      => 'required|integer|min:1|max:999999999999',
+            // Mencegah input transaksi hari esok/masa depan
+            'tanggal'     => 'required|date|before_or_equal:today',
+            // Keterangan wajib string dan panjang wajar agar hemat database
+            'keterangan'  => 'nullable|string|max:1000'
         ]);
 
         $user_id = Auth::user()->id;
-
+        $notif_pengeluaran = null;
+        
         // Cek saldo kalau dia pengeluaran
         if ($request->tipe == 'pengeluaran') {
-            $trx_pemasukan_all = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->get();
-            $total_masuk = 0;
-            foreach ($trx_pemasukan_all as $trx) {
-                $total_masuk = $total_masuk + $trx->jumlah;
-            }
+            $total_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->sum('jumlah');
+            $total_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->sum('jumlah');
 
-            $trx_pengeluaran_all = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->get();
-            $total_keluar = 0;
-            foreach ($trx_pengeluaran_all as $trx) {
-                $total_keluar = $total_keluar + $trx->jumlah;
+            $bulan_transaksi = date('m', strtotime($request->tanggal));
+            $tahun_transaksi = date('Y', strtotime($request->tanggal));
+            
+            $total_keluar_bulan_ini = Transaction::where('user_id', $user_id)
+                ->where('tipe', 'pengeluaran')
+                ->whereMonth('tanggal', $bulan_transaksi)
+                ->whereYear('tanggal', $tahun_transaksi)
+                ->sum('jumlah');
+
+            $kelipatan_lama = floor($total_keluar_bulan_ini / 1000000);
+            $kelipatan_baru = floor(($total_keluar_bulan_ini + $request->jumlah) / 1000000);
+
+            if ($kelipatan_baru > $kelipatan_lama && $kelipatan_baru > 0) {
+                $rupiah = number_format($kelipatan_baru * 1000000, 0, ',', '.');
+                $notif_pengeluaran = "Peringatan: Total pengeluaran Anda bulan ini telah mencapai Rp {$rupiah}. Harap perhatikan keuangan Anda!";
             }
 
             $sisa_saldo = $total_masuk - $total_keluar;
@@ -62,23 +84,7 @@ class TransactionController extends Controller
             }
 
             // Potong saldo di kategori pemasukan
-            $sisa_potong = $request->jumlah;
-            $kategori_pemasukan = Category::where('user_id', $user_id)->where('warna', 'success')->where('saldo', '>', 0)->orderBy('saldo', 'desc')->get();
-
-            foreach ($kategori_pemasukan as $kat) {
-                if ($sisa_potong <= 0) {
-                    break;
-                }
-
-                if ($kat->saldo >= $sisa_potong) {
-                    $kat->saldo = $kat->saldo - $sisa_potong;
-                    $sisa_potong = 0;
-                } else {
-                    $sisa_potong = $sisa_potong - $kat->saldo;
-                    $kat->saldo = 0;
-                }
-                $kat->save();
-            }
+            $this->potongSaldoKategoriPemasukan($user_id, $request->jumlah);
         }
 
         // Kalau pemasukan, tambah ke kategori pemasukan
@@ -99,6 +105,12 @@ class TransactionController extends Controller
         $transaksi->tanggal = $request->tanggal;
         $transaksi->keterangan = $request->keterangan;
         $transaksi->save();
+
+        if ($notif_pengeluaran != null) {
+            return redirect()->route('transaksi.index')
+                ->with('success', 'Transaksi berhasil ditambahkan.')
+                ->with('warning', $notif_pengeluaran);
+        }
 
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil ditambahkan.');
     }
@@ -138,14 +150,24 @@ class TransactionController extends Controller
         }
 
         $request->validate([
-            'judul'       => 'required',
+            'judul'       => 'required|string|max:255',
             'tipe'        => 'required|in:pemasukan,pengeluaran',
-            'category_id' => 'required',
-            'jumlah'      => 'required|integer|min:1',
-            'tanggal'     => 'required|date',
+            'category_id' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $exists = Category::where('id', $value)->where('user_id', Auth::user()->id)->exists();
+                    if (!$exists) {
+                        $fail('Kategori yang dipilih tidak valid atau bukan milik Anda.');
+                    }
+                },
+            ],
+            'jumlah'      => 'required|integer|min:1|max:999999999999',
+            'tanggal'     => 'required|date|before_or_equal:today',
+            'keterangan'  => 'nullable|string|max:1000'
         ]);
 
         $user_id = Auth::user()->id;
+        $notif_pengeluaran = null;
 
         // Kembalikan saldo yang lama dulu
         if ($transaksi->tipe == 'pemasukan') {
@@ -166,16 +188,25 @@ class TransactionController extends Controller
         // Cek saldo kalau yg baru adalah pengeluaran
         if ($request->tipe == 'pengeluaran') {
             // Hitung ulang saldo dgn transaksi ini dianggap 0 dulu (udah dicancel diatas / exclude)
-            $trx_pemasukan_semua = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->where('id', '!=', $transaksi->id)->get();
-            $total_masuk = 0;
-            foreach ($trx_pemasukan_semua as $trx) {
-                $total_masuk = $total_masuk + $trx->jumlah;
-            }
+            $total_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->where('id', '!=', $transaksi->id)->sum('jumlah');
+            $total_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->where('id', '!=', $transaksi->id)->sum('jumlah');
 
-            $trx_pengeluaran_semua = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->where('id', '!=', $transaksi->id)->get();
-            $total_keluar = 0;
-            foreach ($trx_pengeluaran_semua as $trx) {
-                $total_keluar = $total_keluar + $trx->jumlah;
+            $bulan_transaksi = date('m', strtotime($request->tanggal));
+            $tahun_transaksi = date('Y', strtotime($request->tanggal));
+            
+            $total_keluar_bulan_ini = Transaction::where('user_id', $user_id)
+                ->where('tipe', 'pengeluaran')
+                ->where('id', '!=', $transaksi->id)
+                ->whereMonth('tanggal', $bulan_transaksi)
+                ->whereYear('tanggal', $tahun_transaksi)
+                ->sum('jumlah');
+
+            $kelipatan_lama = floor($total_keluar_bulan_ini / 1000000);
+            $kelipatan_baru = floor(($total_keluar_bulan_ini + $request->jumlah) / 1000000);
+
+            if ($kelipatan_baru > $kelipatan_lama && $kelipatan_baru > 0) {
+                $rupiah = number_format($kelipatan_baru * 1000000, 0, ',', '.');
+                $notif_pengeluaran = "Peringatan: Total pengeluaran Anda bulan ini telah mencapai Rp {$rupiah}. Harap perhatikan keuangan Anda!";
             }
 
             // + kalo dia asalnya pemasukan, berarti tadi saldo belum berkurang di DB transaksi
@@ -201,23 +232,7 @@ class TransactionController extends Controller
             }
 
             // Potong saldo di kategori pemasukan buat yg baru
-            $sisa_potong = $request->jumlah;
-            $kategori_pemasukan = Category::where('user_id', $user_id)->where('warna', 'success')->where('saldo', '>', 0)->orderBy('saldo', 'desc')->get();
-
-            foreach ($kategori_pemasukan as $kat) {
-                if ($sisa_potong <= 0) {
-                    break;
-                }
-
-                if ($kat->saldo >= $sisa_potong) {
-                    $kat->saldo = $kat->saldo - $sisa_potong;
-                    $sisa_potong = 0;
-                } else {
-                    $sisa_potong = $sisa_potong - $kat->saldo;
-                    $kat->saldo = 0;
-                }
-                $kat->save();
-            }
+            $this->potongSaldoKategoriPemasukan($user_id, $request->jumlah);
         }
 
         // Terapkan perubahan kategori baru kalau pemasukan
@@ -236,6 +251,12 @@ class TransactionController extends Controller
         $transaksi->tanggal = $request->tanggal;
         $transaksi->keterangan = $request->keterangan;
         $transaksi->save();
+
+        if ($notif_pengeluaran != null) {
+            return redirect()->route('transaksi.index')
+                ->with('success', 'Transaksi berhasil diupdate.')
+                ->with('warning', $notif_pengeluaran);
+        }
 
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil diupdate.');
     }
@@ -256,7 +277,7 @@ class TransactionController extends Controller
                 $kategori->save();
             }
         } else {
-             // Kalau dihapus batalin pengeluaran, balikin saldonya
+            // Kalau dihapus batalin pengeluaran, balikin saldonya
             $kategori_balik = Category::where('user_id', Auth::user()->id)->where('warna', 'success')->orderBy('id', 'desc')->first();
             if ($kategori_balik) {
                 $kategori_balik->saldo = $kategori_balik->saldo + $transaksi->jumlah;
@@ -267,5 +288,22 @@ class TransactionController extends Controller
         $transaksi->delete();
 
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
+    }
+
+    private function potongSaldoKategoriPemasukan($user_id, $sisa_potong)
+    {
+        $kategori_pemasukan = Category::where('user_id', $user_id)->where('warna', 'success')->where('saldo', '>', 0)->orderBy('saldo', 'desc')->get();
+        foreach ($kategori_pemasukan as $kat) {
+            if ($sisa_potong <= 0) break;
+
+            if ($kat->saldo >= $sisa_potong) {
+                $kat->saldo = $kat->saldo - $sisa_potong;
+                $sisa_potong = 0;
+            } else {
+                $sisa_potong = $sisa_potong - $kat->saldo;
+                $kat->saldo = 0;
+            }
+            $kat->save();
+        }
     }
 }

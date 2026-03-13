@@ -13,23 +13,19 @@ class DashboardController extends Controller
     {
         $user_id = Auth::user()->id;
 
-        // hitung pemasukan
-        $pemasukan = 0;
-        $trx_pemasukan = Transaction::where('user_id', $user_id)
-        ->where('tipe', 'pemasukan')
-        ->get();
-        foreach($trx_pemasukan as $trx) {
-            $pemasukan = $pemasukan + $trx->jumlah;
-        }
+        // hitung pemasukan bulan ini
+        $pemasukan = Transaction::where('user_id', $user_id)
+            ->where('tipe', 'pemasukan')
+            ->whereMonth('tanggal', date('m'))
+            ->whereYear('tanggal', date('Y'))
+            ->sum('jumlah');
 
-        // hitung pengeluaran
-        $pengeluaran = 0;
-        $trx_pengeluaran = Transaction::where('user_id', $user_id)
-        ->where('tipe', 'pengeluaran')
-        ->get();
-        foreach($trx_pengeluaran as $trx) {
-            $pengeluaran = $pengeluaran + $trx->jumlah;
-        }
+        // hitung pengeluaran bulan ini
+        $pengeluaran = Transaction::where('user_id', $user_id)
+            ->where('tipe', 'pengeluaran')
+            ->whereMonth('tanggal', date('m'))
+            ->whereYear('tanggal', date('Y'))
+            ->sum('jumlah');
 
         // hitung saldo
         $saldo = $pemasukan - $pengeluaran;

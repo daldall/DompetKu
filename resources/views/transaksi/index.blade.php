@@ -22,6 +22,13 @@
             </div>
         @endif
 
+        @if (session('warning'))
+            <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+                <small><i class="bi bi-exclamation-triangle me-1"></i> {{ session('warning') }}</small>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         @if ($transactions->isEmpty())
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center py-5 text-muted">

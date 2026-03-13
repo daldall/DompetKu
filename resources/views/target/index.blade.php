@@ -85,11 +85,11 @@
                                 <form action="{{ route('target.nabung', $target) }}" method="POST" class="mb-3">
                                     @csrf
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 px-2">Rp</span>
-                                        <input type="number" name="jumlah" min="1" required
-                                            class="form-control border-start-0" placeholder="Jumlah nabung">
-                                        <button type="submit" class="btn btn-success px-3">
-                                            <i class="bi bi-plus-lg me-1"></i> Nabung
+                                        <span class="input-group-text {{ $persen >= 100 ? 'bg-light text-muted' : 'bg-white' }} border-end-0 px-2">Rp</span>
+                                        <input type="number" name="jumlah" min="1" {{ $persen >= 100 ? 'disabled' : 'required' }}
+                                            class="form-control border-start-0 {{ $persen >= 100 ? 'bg-light' : '' }}" placeholder="{{ $persen >= 100 ? 'Target Tercapai !' : 'Jumlah nabung' }}">
+                                        <button type="submit" class="btn btn-success px-3" {{ $persen >= 100 ? 'disabled' : '' }}>
+                                            <i class="bi {{ $persen >= 100 ? 'bi-check-lg' : 'bi-plus-lg' }} me-1"></i> {{ $persen >= 100 ? 'Selesai' : 'Nabung' }}
                                         </button>
                                     </div>
                                 </form>

@@ -36,7 +36,7 @@
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-pencil"></i></span>
                             <input type="text" id="judul" name="judul"
-                                value="{{ old('judul', $transaksi->judul) }}" required class="form-control">
+                                value="{{ old('judul', $transaksi->judul) }}" required maxlength="255" class="form-control">
                         </div>
                     </div>
 
@@ -79,7 +79,7 @@
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-cash"></i></span>
                             <input type="number" id="jumlah" name="jumlah"
-                                value="{{ old('jumlah', $transaksi->jumlah) }}" required min="1"
+                                value="{{ old('jumlah', $transaksi->jumlah) }}" required min="1" max="999999999999"
                                 class="form-control">
                         </div>
                     </div>
@@ -89,7 +89,7 @@
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-calendar"></i></span>
                             <input type="date" id="tanggal" name="tanggal"
-                                value="{{ old('tanggal', $transaksi->tanggal->format('Y-m-d')) }}" required
+                                value="{{ old('tanggal', $transaksi->tanggal->format('Y-m-d')) }}" required max="{{ date('Y-m-d') }}"
                                 class="form-control">
                         </div>
                     </div>
@@ -98,7 +98,7 @@
                         <label for="keterangan" class="form-label fw-semibold">
                             Keterangan <span class="text-muted fw-normal">(opsional)</span>
                         </label>
-                        <textarea id="keterangan" name="keterangan" rows="3" class="form-control" placeholder="Catatan tambahan...">{{ old('keterangan', $transaksi->keterangan) }}</textarea>
+                        <textarea id="keterangan" name="keterangan" rows="3" maxlength="1000" class="form-control" placeholder="Catatan tambahan...">{{ old('keterangan', $transaksi->keterangan) }}</textarea>
                     </div>
 
                     <div class="d-flex gap-2">

@@ -35,7 +35,7 @@
                         <label for="judul" class="form-label fw-semibold">Judul</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-pencil"></i></span>
-                            <input type="text" id="judul" name="judul" value="{{ old('judul') }}" required
+                            <input type="text" id="judul" name="judul" value="{{ old('judul') }}" required maxlength="255"
                                 class="form-control" placeholder="Contoh: Gaji Bulanan">
                         </div>
                     </div>
@@ -81,7 +81,7 @@
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-cash"></i></span>
                             <input type="number" id="jumlah" name="jumlah" value="{{ old('jumlah') }}" required
-                                min="1" class="form-control" placeholder="0">
+                                min="1" max="999999999999" class="form-control" placeholder="0">
                         </div>
                     </div>
 
@@ -90,7 +90,7 @@
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-calendar"></i></span>
                             <input type="date" id="tanggal" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}"
-                                required class="form-control">
+                                required max="{{ date('Y-m-d') }}" class="form-control">
                         </div>
                     </div>
 
@@ -98,7 +98,7 @@
                         <label for="keterangan" class="form-label fw-semibold">
                             Keterangan <span class="text-muted fw-normal">(opsional)</span>
                         </label>
-                        <textarea id="keterangan" name="keterangan" rows="3" class="form-control" placeholder="Catatan tambahan...">{{ old('keterangan') }}</textarea>
+                        <textarea id="keterangan" name="keterangan" rows="3" maxlength="1000" class="form-control" placeholder="Catatan tambahan...">{{ old('keterangan') }}</textarea>
                     </div>
 
                     <div class="d-flex gap-2">
