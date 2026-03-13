@@ -10,6 +10,12 @@
         <h4 class="fw-bold mb-1">Tambah Transaksi</h4>
         <hr class="text-success mb-4" style="border-width: 3px; width: 60px;">
 
+        @if (session('error'))
+            <div class="alert alert-danger py-2">
+                <small><i class="bi bi-exclamation-circle me-1"></i> {{ session('error') }}</small>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="alert alert-danger py-2">
                 <ul class="mb-0 ps-3 small">
