@@ -45,6 +45,19 @@ class CategoryController extends Controller
 
         $kategori->save();
 
+        // FIX: Catat riwayat transaksi jika ada saldo awal agar sinkron dengan Saldo Bersih
+        if ($kategori->saldo > 0) {
+            $transaksi = new \App\Models\Transaction();
+            $transaksi->user_id = Auth::user()->id;
+            $transaksi->category_id = $kategori->id;
+            $transaksi->judul = 'Saldo Awal - ' . $kategori->nama_kategori;
+            $transaksi->tipe = $kategori->warna == 'success' ? 'pemasukan' : 'pengeluaran';
+            $transaksi->jumlah = $kategori->saldo;
+            $transaksi->tanggal = date('Y-m-d');
+            $transaksi->keterangan = 'Saldo awal saat pembuatan kategori';
+            $transaksi->save();
+        }
+
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil ditambahkan.');
     }
 
