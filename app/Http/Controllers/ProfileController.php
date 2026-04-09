@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -31,19 +30,16 @@ class ProfileController extends Controller
 
         $user = User::find(Auth::user()->id);
 
-        // Hapus file lama kalau ada
-        if ($user->foto != null) {
-            if (Storage::disk('public')->exists($user->foto)) {
-                Storage::disk('public')->delete($user->foto);
-            }
-        }
-
-        $nama_file = $request->file('foto')->store('foto-users', 'public');
-        $user->foto = $nama_file;
+        // Konversi gambar ke Base64 dan simpan di database
+        $file = $request->file('foto');
+        $imageData = base64_encode(file_get_contents($file->getRealPath()));
+        $mimeType  = $file->getMimeType();
+        $user->foto = 'data:' . $mimeType . ';base64,' . $imageData;
         $user->save();
 
         return redirect()->route('profile')->with('success', 'Foto profil berhasil diperbarui.');
     }
+
 
     public function updateProfile(Request $request)
     {

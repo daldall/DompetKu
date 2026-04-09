@@ -26,7 +26,7 @@
             <div class="card-body p-4 text-center">
                 <div class="mb-3">
                     @if ($user->foto)
-                        <img src="{{ asset('storage/' . $user->foto) }}" alt="Foto Profil"
+                        <img src="{{ $user->foto }}" alt="Foto Profil"
                             class="rounded-circle border border-3 border-success"
                             style="width: 100px; height: 100px; object-fit: cover;">
                     @else
