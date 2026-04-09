@@ -25,16 +25,10 @@
         <div class="card shadow-sm border-0">
             <div class="card-body p-4 text-center">
                 <div class="mb-3">
-                    @if ($user->foto)
-                        <img src="{{ $user->foto }}" alt="Foto Profil"
-                            class="rounded-circle border border-3 border-success"
-                            style="width: 100px; height: 100px; object-fit: cover;">
-                    @else
-                        <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center border border-3 border-success"
-                            style="width: 100px; height: 100px;">
-                            <i class="bi bi-person-fill text-success" style="font-size: 2.5rem;"></i>
-                        </div>
-                    @endif
+                    <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center border border-3 border-success"
+                        style="width: 100px; height: 100px;">
+                        <i class="bi bi-person-fill text-success" style="font-size: 2.5rem;"></i>
+                    </div>
                 </div>
 
                 <h5 class="fw-bold mb-1">{{ $user->nama }}</h5>

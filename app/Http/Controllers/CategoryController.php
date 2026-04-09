@@ -45,7 +45,7 @@ class CategoryController extends Controller
 
         $kategori->save();
 
-        // FIX: Catat riwayat transaksi jika ada saldo awal agar sinkron dengan Saldo Bersih
+        // Catat riwayat "Saldo Awal" hanya jika ada saldo/anggaran
         if ($kategori->saldo > 0) {
             $transaksi = new \App\Models\Transaction();
             $transaksi->user_id = Auth::user()->id;
@@ -56,6 +56,13 @@ class CategoryController extends Controller
             $transaksi->tanggal = date('Y-m-d');
             $transaksi->keterangan = 'Saldo awal saat pembuatan kategori';
             $transaksi->save();
+
+            // Jika kategori ini adalah kategori pengeluaran (anggaran),
+            // maka anggaran awal dianggap sudah "mengunci" uang tersebut,
+            // sehingga saldo kategori pemasukan harus ikut berkurang.
+            if ($kategori->warna === 'danger') {
+                $this->potongSaldoKategoriPemasukan(Auth::user()->id, $kategori->saldo);
+            }
         }
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil ditambahkan.');
@@ -116,5 +123,30 @@ class CategoryController extends Controller
         $kategori->delete();
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    private function potongSaldoKategoriPemasukan($user_id, $sisa_potong)
+    {
+        $kategori_pemasukan = Category::where('user_id', $user_id)
+            ->where('warna', 'success')
+            ->where('saldo', '>', 0)
+            ->orderBy('saldo', 'desc')
+            ->get();
+
+        foreach ($kategori_pemasukan as $kat) {
+            if ($sisa_potong <= 0) {
+                break;
+            }
+
+            if ($kat->saldo >= $sisa_potong) {
+                $kat->saldo = $kat->saldo - $sisa_potong;
+                $sisa_potong = 0;
+            } else {
+                $sisa_potong = $sisa_potong - $kat->saldo;
+                $kat->saldo = 0;
+            }
+
+            $kat->save();
+        }
     }
 }

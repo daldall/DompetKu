@@ -30,7 +30,7 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('register') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('register') }}" method="POST">
                             @csrf
 
                             <div class="mb-3">
@@ -68,13 +68,6 @@
                                     <input type="password" id="password_confirmation" name="password_confirmation" required
                                         class="form-control" placeholder="Ulangi password">
                                 </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="foto" class="form-label fw-semibold">
-                                    Foto Profil <span class="text-muted fw-normal">(opsional)</span>
-                                </label>
-                                <input type="file" id="foto" name="foto" accept="image/*" class="form-control">
                             </div>
 
                             <button type="submit" class="btn btn-success w-100 fw-semibold py-2">

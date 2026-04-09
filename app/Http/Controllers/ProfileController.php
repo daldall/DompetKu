@@ -22,25 +22,6 @@ class ProfileController extends Controller
         return view('profile.edit', compact('user'));
     }
 
-    public function updateFoto(Request $request)
-    {
-        $request->validate([
-            'foto' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
-        ]);
-
-        $user = User::find(Auth::user()->id);
-
-        // Konversi gambar ke Base64 dan simpan di database
-        $file = $request->file('foto');
-        $imageData = base64_encode(file_get_contents($file->getRealPath()));
-        $mimeType  = $file->getMimeType();
-        $user->foto = 'data:' . $mimeType . ';base64,' . $imageData;
-        $user->save();
-
-        return redirect()->route('profile')->with('success', 'Foto profil berhasil diperbarui.');
-    }
-
-
     public function updateProfile(Request $request)
     {
         $user = User::find(Auth::user()->id);

@@ -13,21 +13,17 @@ class DashboardController extends Controller
     {
         $user_id = Auth::user()->id;
 
-        // hitung pemasukan bulan ini
+        // hitung pemasukan sepanjang waktu
         $pemasukan = Transaction::where('user_id', $user_id)
             ->where('tipe', 'pemasukan')
-            ->whereMonth('tanggal', date('m'))
-            ->whereYear('tanggal', date('Y'))
             ->sum('jumlah');
 
-        // hitung pengeluaran bulan ini
+        // hitung pengeluaran sepanjang waktu
         $pengeluaran = Transaction::where('user_id', $user_id)
             ->where('tipe', 'pengeluaran')
-            ->whereMonth('tanggal', date('m'))
-            ->whereYear('tanggal', date('Y'))
             ->sum('jumlah');
 
-        // hitung saldo
+        // hitung saldo (harus selaras dengan total saldo kategori pemasukan)
         $saldo = $pemasukan - $pengeluaran;
 
         // ambil target 3 terbaru

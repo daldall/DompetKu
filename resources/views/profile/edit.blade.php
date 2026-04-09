@@ -23,35 +23,6 @@
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body p-4">
                 <h6 class="fw-bold mb-3">
-                    <i class="bi bi-camera me-2 text-success"></i> Foto Profil
-                </h6>
-                <div class="d-flex align-items-center gap-3">
-                    @if ($user->foto)
-                        <img src="{{ asset('storage/' . $user->foto) }}" alt="Foto"
-                            class="rounded-circle border border-2 border-success"
-                            style="width: 70px; height: 70px; object-fit: cover;">
-                    @else
-                        <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center border border-2 border-success"
-                            style="width: 70px; height: 70px;">
-                            <i class="bi bi-person-fill text-success fs-2"></i>
-                        </div>
-                    @endif
-                    <form action="{{ route('profile.foto') }}" method="POST" enctype="multipart/form-data"
-                        class="flex-grow-1">
-                        @csrf
-                        <input type="file" name="foto" accept="image/*" class="form-control form-control-sm mb-2"
-                            required>
-                        <button type="submit" class="btn btn-success btn-sm">
-                            <i class="bi bi-upload me-1"></i> Upload Foto
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-4">
-                <h6 class="fw-bold mb-3">
                     <i class="bi bi-person-gear me-2 text-success"></i> Informasi Profil
                 </h6>
                 <form action="{{ route('profile.update') }}" method="POST">

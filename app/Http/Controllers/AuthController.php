@@ -20,7 +20,6 @@ class AuthController extends Controller
             'nama'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
-            'foto'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $data = [
@@ -28,10 +27,6 @@ class AuthController extends Controller
             'email'    => $request->email,
             'password' => Hash::make($request->password),
         ];
-
-        if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('foto-users', 'public');
-        }
 
         User::create($data);
 

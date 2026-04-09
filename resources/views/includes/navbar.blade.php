@@ -47,15 +47,10 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#"
                         role="button" data-bs-toggle="dropdown">
-                        @if (Auth::user()->foto)
-                            <img src="{{ asset('storage/' . Auth::user()->foto) }}" alt="Foto"
-                                class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
-                        @else
-                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-2"
-                                style="width: 32px; height: 32px;">
-                                <i class="bi bi-person-fill text-success"></i>
-                            </div>
-                        @endif
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-2"
+                            style="width: 32px; height: 32px;">
+                            <i class="bi bi-person-fill text-success"></i>
+                        </div>
                         <span class="d-none d-lg-inline">{{ Auth::user()->nama ?? 'Pengguna' }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">

@@ -50,24 +50,46 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Pilih Warna</label>
+                        <label class="form-label fw-semibold">Tipe Kategori</label>
                         <input type="hidden" name="warna" id="warna" value="{{ old('warna', $kategori->warna) }}"
                             required>
-                        <div class="d-flex gap-2">
-                            <button type="button"
-                                class="btn rounded-circle d-flex align-items-center justify-content-center warna-pilih"
-                                data-warna="success"
-                                style="width: 42px; height: 42px; background-color: #198754; border: 3px solid {{ old('warna', $kategori->warna) === 'success' ? '#333' : 'transparent' }};">
-                                <i
-                                    class="bi bi-check-lg text-white {{ old('warna', $kategori->warna) === 'success' ? '' : 'd-none' }}"></i>
-                            </button>
-                            <button type="button"
-                                class="btn rounded-circle d-flex align-items-center justify-content-center warna-pilih"
-                                data-warna="danger"
-                                style="width: 42px; height: 42px; background-color: #dc3545; border: 3px solid {{ old('warna', $kategori->warna) === 'danger' ? '#333' : 'transparent' }};">
-                                <i
-                                    class="bi bi-check-lg text-white {{ old('warna', $kategori->warna) === 'danger' ? '' : 'd-none' }}"></i>
-                            </button>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <button type="button" data-warna="success"
+                                    class="w-100 text-start btn bg-white border rounded-3 shadow-sm warna-pilih {{ old('warna', $kategori->warna) === 'success' ? 'border-success ring-selected' : '' }}">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 42px; height: 42px; background-color: #19875410;">
+                                            <i class="bi bi-arrow-down-circle-fill text-success fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">Pemasukan</div>
+                                            <small class="text-muted">Uang yang masuk (contoh: gajian)</small>
+                                        </div>
+                                        <i
+                                            class="bi bi-check-circle-fill text-success ms-auto {{ old('warna', $kategori->warna) === 'success' ? '' : 'd-none' }}">
+                                        </i>
+                                    </div>
+                                </button>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <button type="button" data-warna="danger"
+                                    class="w-100 text-start btn bg-white border rounded-3 shadow-sm warna-pilih {{ old('warna', $kategori->warna) === 'danger' ? 'border-danger ring-selected' : '' }}">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 42px; height: 42px; background-color: #dc354510;">
+                                            <i class="bi bi-arrow-up-circle-fill text-danger fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">Pengeluaran / Anggaran</div>
+                                            <small class="text-muted">Uang yang keluar (contoh: belanja)</small>
+                                        </div>
+                                        <i
+                                            class="bi bi-check-circle-fill text-danger ms-auto {{ old('warna', $kategori->warna) === 'danger' ? '' : 'd-none' }}">
+                                        </i>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -112,16 +134,26 @@
         document.querySelectorAll('.warna-pilih').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.warna-pilih').forEach(b => {
-                    b.style.border = '3px solid transparent';
-                    b.querySelector('i').classList.add('d-none');
+                    b.classList.remove('border-success', 'border-danger', 'ring-selected');
+                    const checkIcon = b.querySelector('.bi-check-circle-fill');
+                    if (checkIcon) checkIcon.classList.add('d-none');
                 });
-                btn.style.border = '3px solid #333';
-                btn.querySelector('i').classList.remove('d-none');
-                document.getElementById('warna').value = btn.dataset.warna;
+
+                const warna = btn.dataset.warna;
+                if (warna === 'success') {
+                    btn.classList.add('border-success', 'ring-selected');
+                } else {
+                    btn.classList.add('border-danger', 'ring-selected');
+                }
+
+                const checkIcon = btn.querySelector('.bi-check-circle-fill');
+                if (checkIcon) checkIcon.classList.remove('d-none');
+
+                document.getElementById('warna').value = warna;
 
                 // Tampilkan/sembunyikan input anggaran
                 const saldoWrapper = document.getElementById('saldo-wrapper');
-                if (btn.dataset.warna === 'danger') {
+                if (warna === 'danger') {
                     saldoWrapper.style.display = '';
                 } else {
                     saldoWrapper.style.display = 'none';

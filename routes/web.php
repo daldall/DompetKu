@@ -25,7 +25,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::post('/profile/foto', [ProfileController::class, 'updateFoto'])->name('profile.foto');
     Route::put('/profile/update', [ProfileController::class, 'updateProfile'])->name('profile.update');
 
     Route::resource('kategori', CategoryController::class)->except(['show']);
