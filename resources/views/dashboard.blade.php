@@ -85,16 +85,10 @@
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        @if ($target->foto)
-                                            <img src="{{ asset('storage/' . $target->foto) }}" alt=""
-                                                class="rounded-circle flex-shrink-0"
-                                                style="width: 36px; height: 36px; object-fit: cover;">
-                                        @else
-                                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                style="width: 36px; height: 36px;">
-                                                <i class="bi bi-bullseye text-success"></i>
-                                            </div>
-                                        @endif
+                                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                            style="width: 36px; height: 36px;">
+                                            <i class="bi {{ $target->ikon ?? 'bi-bullseye' }} text-success"></i>
+                                        </div>
                                         <h6 class="fw-semibold mb-0 text-truncate">{{ $target->nama_target }}</h6>
                                     </div>
                                     <div class="progress mb-2" style="height: 6px;">

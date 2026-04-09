@@ -42,15 +42,10 @@
                     @php $persen = $target->progress; @endphp
                     <div class="col-12 col-md-6">
                         <div class="card border-0 shadow-sm h-100 overflow-hidden">
-                            @if ($target->foto)
-                                <img src="{{ asset('storage/' . $target->foto) }}" alt="{{ $target->nama_target }}"
-                                    class="card-img-top" style="height: 180px; object-fit: cover;">
-                            @else
-                                <div class="bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
-                                    style="height: 180px;">
-                                    <i class="bi bi-image text-success" style="font-size: 3rem;"></i>
-                                </div>
-                            @endif
+                            <div class="bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
+                                style="height: 180px;">
+                                <i class="bi {{ $target->ikon ?? 'bi-bullseye' }} text-success" style="font-size: 3rem;"></i>
+                            </div>
 
                             <div class="card-body p-3">
                                 <div class="d-flex justify-content-between align-items-start mb-2">

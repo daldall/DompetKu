@@ -29,12 +29,13 @@ class TargetController extends Controller
         $request->validate([
             'nama_target'    => 'required|string|max:255',
             'target_nominal' => 'required|integer|min:1',
-            'foto'           => 'nullable|image|max:2048',
+            'ikon'           => 'required|string|max:50',
         ]);
 
         $target = new Target();
         $target->user_id = Auth::user()->id;
         $target->nama_target = $request->nama_target;
+        $target->ikon = $request->ikon;
         $target->target_nominal = $request->target_nominal;
         $target->tanggal_target = $request->tanggal_target;
 
@@ -42,12 +43,6 @@ class TargetController extends Controller
             $target->terkumpul = $request->terkumpul;
         } else {
             $target->terkumpul = 0;
-        }
-
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $nama = $file->store('foto-targets', 'public');
-            $target->foto = $nama;
         }
 
         $target->save();
@@ -75,11 +70,13 @@ class TargetController extends Controller
         }
 
         $request->validate([
-            'nama_target'    => 'required',
+            'nama_target'    => 'required|string|max:255',
             'target_nominal' => 'required|integer|min:1',
+            'ikon'           => 'required|string|max:50',
         ]);
 
         $target->nama_target = $request->nama_target;
+        $target->ikon = $request->ikon;
         $target->target_nominal = $request->target_nominal;
         $target->tanggal_target = $request->tanggal_target;
 
@@ -87,15 +84,6 @@ class TargetController extends Controller
             $target->terkumpul = $request->terkumpul;
         } else {
             $target->terkumpul = 0;
-        }
-
-        if ($request->hasFile('foto')) {
-            if ($target->foto != null) {
-                if (Storage::disk('public')->exists($target->foto)) {
-                    Storage::disk('public')->delete($target->foto);
-                }
-            }
-            $target->foto = $request->file('foto')->store('foto-targets', 'public');
         }
 
         $target->save();

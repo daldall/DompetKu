@@ -12,6 +12,7 @@ class Target extends Model
     protected $fillable = [
         'user_id',
         'nama_target',
+        'ikon',
         'target_nominal',
         'terkumpul',
         'foto',
