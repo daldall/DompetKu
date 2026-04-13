@@ -29,6 +29,14 @@ class DashboardController extends Controller
         // ambil target 3 terbaru
         $targets = Target::where('user_id', $user_id)->orderBy('id', 'desc')->take(3)->get();
 
-        return view('dashboard', compact('pemasukan', 'pengeluaran', 'saldo', 'targets'));
+        // data chart pengeluaran berdasarkan kategori
+        $pengeluaranKategori = Transaction::where('transactions.user_id', $user_id)
+            ->where('transactions.tipe', 'pengeluaran')
+            ->join('categories', 'transactions.category_id', '=', 'categories.id')
+            ->selectRaw('categories.nama_kategori as label, SUM(transactions.jumlah) as total')
+            ->groupBy('categories.id', 'categories.nama_kategori')
+            ->get();
+
+        return view('dashboard', compact('pemasukan', 'pengeluaran', 'saldo', 'targets', 'pengeluaranKategori'));
     }
 }

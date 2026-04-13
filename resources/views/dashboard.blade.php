@@ -70,6 +70,23 @@
             </div>
         </div>
 
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-4">Statistik Pengeluaran Kategori</h5>
+                        @if($pengeluaranKategori->isEmpty())
+                            <p class="text-muted text-center py-4 mb-0">Belum ada data pengeluaran untuk ditampilkan.</p>
+                        @else
+                            <div style="height: 300px; display: flex; justify-content: center;">
+                                <canvas id="expenseChart"></canvas>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if ($targets->isNotEmpty())
             <div class="mt-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -123,4 +140,78 @@
             </div>
         @endif
     </div>
+@endsection
+
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('expenseChart');
+        if (ctx) {
+            const chartData = @json($pengeluaranKategori);
+            
+            // Format angka ke format Rupiah
+            const formatRupiah = (angka) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(angka);
+            };
+
+            const labels = chartData.map(item => item.label);
+            const data = chartData.map(item => item.total);
+
+            const bgColors = [
+                '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', 
+                '#c9cbcf', '#e83e8c', '#6f42c1', '#20c997'
+            ];
+
+            // Jika kategori lebih dari 10, array warna akan di-loop
+            const colorsToUse = labels.map((_, index) => bgColors[index % bgColors.length]);
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colorsToUse,
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    family: "'Segoe UI', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatRupiah(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 @endsection
