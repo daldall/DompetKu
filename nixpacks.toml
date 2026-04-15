@@ -14,6 +14,7 @@ PHP_OPCACHE_MEMORY_CONSUMPTION = "128"
 PHP_OPCACHE_MAX_ACCELERATED_FILES = "10000"
 PHP_OPCACHE_REVALIDATE_FREQ = "0"
 LARAVEL_OCTANE = "0"
+PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
-cmd = "php artisan optimize:clear && php artisan optimize && php artisan storage:link --force && php artisan migrate --force && php artisan queue:work & php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.conf"
+cmd = "php artisan optimize:clear && php artisan optimize && php artisan storage:link --force && php artisan migrate --force && php artisan queue:work & php artisan serve --host=0.0.0.0 --port=$PORT"
