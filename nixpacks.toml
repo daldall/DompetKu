@@ -12,6 +12,7 @@ cmds = [
 
 [variables]
 PHP_OPCACHE_ENABLE = "1"
+PHP_CLI_SERVER_WORKERS = "4"
 
 [start]
-cmd = "php artisan optimize:clear && php artisan optimize && php artisan storage:link --force && php artisan migrate --force && php artisan queue:work & php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.conf"
+cmd = "php artisan optimize:clear && php artisan optimize && php artisan storage:link --force && php artisan migrate --force && php artisan queue:work --sleep=1 --tries=3 --timeout=120 & php artisan serve --host=0.0.0.0 --port=$PORT"
