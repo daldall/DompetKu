@@ -135,18 +135,14 @@ class TargetController extends Controller
             }
         }
 
-        // Cek saldo pemasukan dulu
-        $trx_banyak_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->get();
-        $total_pemasukan = 0;
-        foreach ($trx_banyak_masuk as $trx) {
-            $total_pemasukan = $total_pemasukan + $trx->jumlah;
-        }
+        // Cek saldo pemasukan dulu (pakai SUM di DB biar cepat)
+        $total_pemasukan = Transaction::where('user_id', $user_id)
+            ->where('tipe', 'pemasukan')
+            ->sum('jumlah');
 
-        $trx_banyak_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->get();
-        $total_pengeluaran = 0;
-        foreach ($trx_banyak_keluar as $trx) {
-            $total_pengeluaran = $total_pengeluaran + $trx->jumlah;
-        }
+        $total_pengeluaran = Transaction::where('user_id', $user_id)
+            ->where('tipe', 'pengeluaran')
+            ->sum('jumlah');
 
         $saldo_sekarang = $total_pemasukan - $total_pengeluaran;
 

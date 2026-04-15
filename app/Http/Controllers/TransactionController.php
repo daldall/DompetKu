@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,13 +61,13 @@ class TransactionController extends Controller
             $total_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->sum('jumlah');
             $total_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->sum('jumlah');
 
-            $bulan_transaksi = date('m', strtotime($request->tanggal));
-            $tahun_transaksi = date('Y', strtotime($request->tanggal));
-            
+            $tanggal = Carbon::parse($request->tanggal);
+            $awal_bulan = $tanggal->copy()->startOfMonth()->toDateString();
+            $akhir_bulan = $tanggal->copy()->endOfMonth()->toDateString();
+
             $total_keluar_bulan_ini = Transaction::where('user_id', $user_id)
                 ->where('tipe', 'pengeluaran')
-                ->whereMonth('tanggal', $bulan_transaksi)
-                ->whereYear('tanggal', $tahun_transaksi)
+                ->whereBetween('tanggal', [$awal_bulan, $akhir_bulan])
                 ->sum('jumlah');
 
             $kelipatan_lama = floor($total_keluar_bulan_ini / 1000000);
@@ -191,14 +192,14 @@ class TransactionController extends Controller
             $total_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->where('id', '!=', $transaksi->id)->sum('jumlah');
             $total_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->where('id', '!=', $transaksi->id)->sum('jumlah');
 
-            $bulan_transaksi = date('m', strtotime($request->tanggal));
-            $tahun_transaksi = date('Y', strtotime($request->tanggal));
-            
+            $tanggal = Carbon::parse($request->tanggal);
+            $awal_bulan = $tanggal->copy()->startOfMonth()->toDateString();
+            $akhir_bulan = $tanggal->copy()->endOfMonth()->toDateString();
+
             $total_keluar_bulan_ini = Transaction::where('user_id', $user_id)
                 ->where('tipe', 'pengeluaran')
                 ->where('id', '!=', $transaksi->id)
-                ->whereMonth('tanggal', $bulan_transaksi)
-                ->whereYear('tanggal', $tahun_transaksi)
+                ->whereBetween('tanggal', [$awal_bulan, $akhir_bulan])
                 ->sum('jumlah');
 
             $kelipatan_lama = floor($total_keluar_bulan_ini / 1000000);
