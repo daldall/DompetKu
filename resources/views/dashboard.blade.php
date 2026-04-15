@@ -1,4 +1,4 @@
-@extends('layouts.app')
+    @extends('layouts.app')
 
 @section('title', 'Dashboard - DompetKu')
 @section('body-class', 'd-flex flex-column min-vh-100 bg-light')

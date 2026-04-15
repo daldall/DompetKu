@@ -16,4 +16,4 @@ PHP_OPCACHE_REVALIDATE_FREQ = "0"
 LARAVEL_OCTANE = "0"
 
 [start]
-cmd = "php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan storage:link --force && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080"
+cmd = "php artisan optimize:clear && php artisan optimize && php artisan storage:link --force && php artisan migrate --force && php artisan queue:work & php artisan serve --host=0.0.0.0 --port=8080"
