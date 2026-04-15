@@ -1,6 +1,4 @@
-[providers]
-php = true
-node = true
+providers = ["php", "node"]
 
 [phases.install]
 cmds = [
