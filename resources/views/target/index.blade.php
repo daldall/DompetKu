@@ -55,8 +55,8 @@
                                 </div>
 
                                 <div class="progress mb-3" style="height: 8px;">
-                                    <div class="progress-bar bg-success" role="progressbar"
-                                        style="width: {{ $persen }}%"></div>
+                                    <div class="progress-bar bg-success js-progress-bar" role="progressbar"
+                                        data-progress="{{ $persen }}" style="width: 0%"></div>
                                 </div>
 
                                 <div class="d-flex justify-content-between small text-muted mb-1">
@@ -109,4 +109,18 @@
             </div>
         @endif
     </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.js-progress-bar[data-progress]').forEach(function(el) {
+            var raw = parseInt(el.getAttribute('data-progress'), 10);
+            if (isNaN(raw)) return;
+            if (raw < 0) raw = 0;
+            if (raw > 100) raw = 100;
+            el.style.width = raw + '%';
+        });
+    });
+</script>
 @endsection

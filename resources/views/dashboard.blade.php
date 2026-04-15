@@ -109,7 +109,7 @@
                                         <h6 class="fw-semibold mb-0 text-truncate">{{ $target->nama_target }}</h6>
                                     </div>
                                     <div class="progress mb-2" style="height: 6px;">
-                                        <div class="progress-bar bg-success" style="width: {{ $persen }}%"></div>
+                                        <div class="progress-bar bg-success js-progress-bar" data-progress="{{ $persen }}" style="width: 0%"></div>
                                     </div>
                                     <div class="d-flex justify-content-between small">
                                         <span class="text-muted">Rp
@@ -144,12 +144,21 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="application/json" id="expenseChartData">@json($pengeluaranKategori)</script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('.js-progress-bar[data-progress]').forEach((el) => {
+            const raw = parseInt(el.getAttribute('data-progress'), 10);
+            if (Number.isNaN(raw)) return;
+            const val = Math.max(0, Math.min(100, raw));
+            el.style.width = val + '%';
+        });
+
         const ctx = document.getElementById('expenseChart');
         if (ctx) {
-            const chartData = @json($pengeluaranKategori);
-            
+            const dataEl = document.getElementById('expenseChartData');
+            const chartData = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+
             // Format angka ke format Rupiah
             const formatRupiah = (angka) => {
                 return new Intl.NumberFormat('id-ID', {

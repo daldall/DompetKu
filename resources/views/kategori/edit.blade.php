@@ -93,8 +93,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-3" id="saldo-wrapper"
-                        style="{{ old('warna', $kategori->warna) === 'danger' ? '' : 'display:none;' }}">
+                    <div class="mb-3 {{ old('warna', $kategori->warna) === 'danger' ? '' : 'd-none' }}" id="saldo-wrapper">
                         <label for="saldo" class="form-label fw-semibold">Anggaran (Rp)</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-cash-stack"></i></span>
@@ -154,9 +153,9 @@
                 // Tampilkan/sembunyikan input anggaran
                 const saldoWrapper = document.getElementById('saldo-wrapper');
                 if (warna === 'danger') {
-                    saldoWrapper.style.display = '';
+                    saldoWrapper.classList.remove('d-none');
                 } else {
-                    saldoWrapper.style.display = 'none';
+                    saldoWrapper.classList.add('d-none');
                 }
             });
         });
