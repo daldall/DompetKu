@@ -1,5 +1,4 @@
-[providers]
-php = true
+providers = ["php"]
 
 [phases.setup]
 nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "php82Packages.fpm", "nginx"]
