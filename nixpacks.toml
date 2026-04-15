@@ -1,4 +1,8 @@
-providers = ["php", "node"]
+[providers]
+php = true
+
+[phases.setup]
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "php82Packages.fpm", "nginx"]
 
 [phases.install]
 cmds = [
