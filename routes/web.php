@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('kategori', CategoryController::class)->except(['show']);
     Route::resource('transaksi', TransactionController::class);
+    Route::post('/transaksi/upload-struk', [TransactionController::class, 'uploadStruk'])->name('transaksi.uploadStruk');
     Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat.index');
     Route::get('/riwayat/export', [RiwayatController::class, 'export'])->name('riwayat.export');
 

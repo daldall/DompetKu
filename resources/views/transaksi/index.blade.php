@@ -22,12 +22,57 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                <small><i class="bi bi-exclamation-circle me-1"></i> {{ session('error') }}</small>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                <ul class="mb-0 ps-3 small">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         @if (session('warning'))
             <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
                 <small><i class="bi bi-exclamation-triangle me-1"></i> {{ session('warning') }}</small>
                 <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
             </div>
         @endif
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body p-3 p-md-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <p class="fw-semibold mb-0">Upload Struk (Otomatis)</p>
+                        <small class="text-muted">Akan membuat transaksi pengeluaran dengan kategori <strong>Struk</strong> dan mengisi total otomatis.</small>
+                    </div>
+                </div>
+
+                <form class="mt-3" action="{{ route('transaksi.uploadStruk') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md">
+                            <label for="image" class="form-label fw-semibold mb-1">Foto struk</label>
+                            <input class="form-control" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" required>
+                            <div class="form-text">Format: JPG/PNG/WEBP</div>
+                        </div>
+                        <div class="col-12 col-md-auto">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-upload me-1"></i> Proses Struk
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         @if ($transactions->isEmpty())
             <div class="card border-0 shadow-sm">

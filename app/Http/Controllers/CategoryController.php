@@ -11,7 +11,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::where('user_id', Auth::user()->id)
-            ->where('nama_kategori', '!=', 'Tabungan')
+            ->whereNotIn('nama_kategori', ['Tabungan', 'Struk'])
             ->orderBy('id', 'desc')
             ->paginate(5);
 
