@@ -15,6 +15,58 @@ class UploadStrukTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_upload_struk_requires_image(): void
+    {
+        $user = User::query()->create([
+            'nama' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('transaksi.uploadStruk'), []);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['image']);
+    }
+
+    public function test_upload_struk_rejects_non_image_file(): void
+    {
+        $user = User::query()->create([
+            'nama' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('transaksi.uploadStruk'), [
+            'image' => UploadedFile::fake()->create('nota.pdf', 10, 'application/pdf'),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['image']);
+    }
+
+    public function test_upload_struk_rejects_too_large_image(): void
+    {
+        $user = User::query()->create([
+            'nama' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('transaksi.uploadStruk'), [
+            'image' => UploadedFile::fake()->image('struk.jpg')->size(6000), // KB
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['image']);
+    }
+
     public function test_upload_struk_creates_expense_transaction_and_category(): void
     {
         $user = User::query()->create([

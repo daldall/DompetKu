@@ -51,8 +51,8 @@
             <div class="card-body p-3 p-md-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <p class="fw-semibold mb-0">Upload Struk (Otomatis)</p>
-                        <small class="text-muted">Akan membuat transaksi pengeluaran dengan kategori <strong>Struk</strong> dan mengisi total otomatis.</small>
+                       <p class="fw-semibold mb-0">Upload Struk (Otomatis)</p>
+                      <small class="text-muted">Upload struk, langsung nyatet pengeluaran + total keisi otomatis.</small>  
                     </div>
                 </div>
 
@@ -61,14 +61,25 @@
                     <div class="row g-2 align-items-end">
                         <div class="col-12 col-md">
                             <label for="image" class="form-label fw-semibold mb-1">Foto struk</label>
-                            <input class="form-control" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" required>
+                            <input class="form-control @error('image') is-invalid @enderror" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" required>
+                            @error('image')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                             <div class="form-text">Format: JPG/PNG/WEBP</div>
                         </div>
                         <div class="col-12 col-md-auto">
-                            <button type="submit" class="btn btn-success w-100">
+                            <button type="submit" class="btn btn-success w-100" id="btnProsesStruk" data-require-preview="1">
                                 <i class="bi bi-upload me-1"></i> Proses Struk
                             </button>
                         </div>
+                    </div>
+
+                    <div class="mt-3 d-none" id="strukPreviewWrap" aria-live="polite">
+                        <p class="fw-semibold mb-2">Preview struk</p>
+                        <div class="border rounded-3 p-2 bg-white">
+                            <img id="strukPreviewImg" alt="Preview struk" class="img-fluid w-100" style="max-height: 420px; object-fit: contain;">
+                        </div>
+                        <div class="form-text">Pastikan struk terbaca, lalu klik "Proses Struk".</div>
                     </div>
                 </form>
             </div>
@@ -144,4 +155,61 @@
             @endif
         @endif
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('image');
+            const previewWrap = document.getElementById('strukPreviewWrap');
+            const previewImg = document.getElementById('strukPreviewImg');
+            const submitBtn = document.getElementById('btnProsesStruk');
+
+            if (!input || !previewWrap || !previewImg || !submitBtn) return;
+
+            let objectUrl = null;
+
+            const disableUntilPreview = submitBtn.dataset.requirePreview === '1';
+            if (disableUntilPreview) {
+                submitBtn.disabled = true;
+            }
+
+            const resetPreview = () => {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+                previewImg.removeAttribute('src');
+                previewWrap.classList.add('d-none');
+                if (disableUntilPreview) {
+                    submitBtn.disabled = true;
+                }
+            };
+
+            input.addEventListener('change', function() {
+                const file = input.files && input.files[0] ? input.files[0] : null;
+                if (!file) {
+                    resetPreview();
+                    return;
+                }
+
+                if (!file.type || !file.type.startsWith('image/')) {
+                    resetPreview();
+                    return;
+                }
+
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                }
+
+                objectUrl = URL.createObjectURL(file);
+                previewImg.src = objectUrl;
+                previewWrap.classList.remove('d-none');
+
+                if (disableUntilPreview) {
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+    </script>
 @endsection

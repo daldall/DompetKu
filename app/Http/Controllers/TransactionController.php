@@ -292,17 +292,26 @@ class TransactionController extends Controller
 
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
     }
-
+    
     public function uploadStruk(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp',
-        ]);
+        $request->validate(
+            [
+                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:5120',
+            ],
+            [
+                'image.required' => 'Foto struk wajib diupload.',
+                'image.file' => 'File struk tidak valid.',
+                'image.image' => 'File harus berupa gambar.',
+                'image.mimes' => 'Format gambar harus JPG/PNG/WEBP.',
+                'image.max' => 'Ukuran gambar maksimal 5MB.',
+            ]
+        );
 
         $userId = Auth::user()->id;
         $apiKey = config('services.gemini.key');
 
-        if (!$apiKey) {
+        if (!$apiKey) { 
             $message = 'GEMINI_API_KEY belum di-set.';
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 500);
