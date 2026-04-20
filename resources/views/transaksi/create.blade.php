@@ -28,6 +28,28 @@
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
+                <div class="mb-4">
+                    <p class="fw-semibold mb-1">Scan Struk (AI) <span class="text-muted fw-normal">(opsional)</span></p>
+                    <small class="text-muted">Upload struk untuk isi otomatis tipe, jumlah, dan keterangan.</small>
+
+                    <div class="mt-3">
+                        <label for="struk_image" class="form-label fw-semibold mb-1">Gambar struk</label>
+                        <input class="form-control" type="file" id="struk_image" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif">
+                        <div class="form-text">Format: JPG/JPEG/PNG/WEBP/AVIF/HEIC (maks 5MB)</div>
+                        <div class="small mt-2 d-none" id="scanStrukStatus" aria-live="polite">
+                            <span id="scanStrukSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            <span id="scanStrukStatusText"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-none" id="scanStrukPreviewWrap" aria-live="polite">
+                        <p class="fw-semibold mb-2">Preview struk</p>
+                        <div class="border rounded-3 p-2 bg-white">
+                            <img id="scanStrukPreviewImg" alt="Preview struk" class="img-fluid w-100" style="max-height: 420px; object-fit: contain;">
+                        </div>
+                    </div>
+                </div>
+
                 <form action="{{ route('transaksi.store') }}" method="POST">
                     @csrf
 
@@ -69,10 +91,6 @@
                                     </option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div id="anggaran-info" class="form-text text-danger d-none">
-                            <i class="bi bi-info-circle me-1"></i>Anggaran kategori: <strong id="anggaran-amount">Rp
-                                0</strong>
                         </div>
                     </div>
 
@@ -116,25 +134,131 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const categorySelect = document.getElementById('category_id');
+            const scanInput = document.getElementById('struk_image');
+            const scanStatus = document.getElementById('scanStrukStatus');
+            const scanSpinner = document.getElementById('scanStrukSpinner');
+            const scanStatusText = document.getElementById('scanStrukStatusText');
+            const scanPreviewWrap = document.getElementById('scanStrukPreviewWrap');
+            const scanPreviewImg = document.getElementById('scanStrukPreviewImg');
+            const tipeSelect = document.getElementById('tipe');
+            const judulInput = document.getElementById('judul');
             const jumlahInput = document.getElementById('jumlah');
-            const anggaranInfo = document.getElementById('anggaran-info');
-            const anggaranAmount = document.getElementById('anggaran-amount');
+            const keteranganInput = document.getElementById('keterangan');
 
-            categorySelect.addEventListener('change', function() {
-                const selected = this.options[this.selectedIndex];
-                const warna = selected.getAttribute('data-warna');
-                const saldo = parseInt(selected.getAttribute('data-saldo')) || 0;
+            let scanObjectUrl = null;
+            let currentAbortController = null;
 
-                // Hanya auto-fill untuk kategori pengeluaran (warna danger) yang punya anggaran > 0
-                if (warna === 'danger' && saldo > 0) {
-                    jumlahInput.value = saldo;
-                    anggaranAmount.textContent = 'Rp ' + saldo.toLocaleString('id-ID');
-                    anggaranInfo.classList.remove('d-none');
-                } else {
-                    anggaranInfo.classList.add('d-none');
+            const setStatus = (text, kind) => {
+                if (!scanStatus) return;
+                scanStatus.classList.remove('d-none', 'text-muted', 'text-success', 'text-danger');
+                if (kind === 'success') scanStatus.classList.add('text-success');
+                else if (kind === 'error') scanStatus.classList.add('text-danger');
+                else scanStatus.classList.add('text-muted');
+
+                const isLoading = kind === 'loading';
+                if (scanSpinner) scanSpinner.classList.toggle('d-none', !isLoading);
+                if (scanStatusText) scanStatusText.textContent = text;
+                else scanStatus.textContent = text;
+            };
+
+            const resetScanUi = () => {
+                if (scanObjectUrl) {
+                    URL.revokeObjectURL(scanObjectUrl);
+                    scanObjectUrl = null;
                 }
-            });
+                if (scanPreviewImg) scanPreviewImg.removeAttribute('src');
+                if (scanPreviewWrap) scanPreviewWrap.classList.add('d-none');
+                if (scanStatus) {
+                    if (scanStatusText) scanStatusText.textContent = '';
+                    else scanStatus.textContent = '';
+                    scanStatus.classList.add('d-none');
+                }
+                if (scanSpinner) scanSpinner.classList.add('d-none');
+            };
+
+            if (scanInput) {
+                scanInput.addEventListener('change', async function() {
+                    const file = scanInput.files && scanInput.files[0] ? scanInput.files[0] : null;
+                    if (!file) {
+                        resetScanUi();
+                        return;
+                    }
+
+                    if (!file.type || !file.type.startsWith('image/')) {
+                        resetScanUi();
+                        setStatus('File harus berupa gambar.', 'error');
+                        return;
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        resetScanUi();
+                        setStatus('Ukuran gambar maksimal 5MB.', 'error');
+                        return;
+                    }
+
+                    if (currentAbortController) {
+                        currentAbortController.abort();
+                    }
+                    currentAbortController = new AbortController();
+
+                    if (scanObjectUrl) {
+                        URL.revokeObjectURL(scanObjectUrl);
+                    }
+                    scanObjectUrl = URL.createObjectURL(file);
+                    if (scanPreviewImg) scanPreviewImg.src = scanObjectUrl;
+                    if (scanPreviewWrap) scanPreviewWrap.classList.remove('d-none');
+
+                    setStatus('Sedang membaca struk dengan AI...', 'loading');
+
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    try {
+                        const res = await fetch("{{ route('transaksi.scanStruk') }}", {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                                'Accept': 'application/json'
+                            },
+                            body: formData,
+                            signal: currentAbortController.signal,
+                        });
+
+                        const data = await res.json().catch(() => null);
+                        if (!res.ok || !data) {
+                            const msg = data && data.message ? data.message : 'Gagal membaca struk.';
+                            setStatus(msg, 'error');
+                            return;
+                        }
+
+                        if (tipeSelect && data.tipe) {
+                            tipeSelect.value = data.tipe;
+                        }
+                        if (jumlahInput && typeof data.jumlah === 'number') {
+                            jumlahInput.value = data.jumlah;
+                        }
+                        if (keteranganInput && typeof data.keterangan === 'string') {
+                            if (!keteranganInput.value || keteranganInput.value.trim() === '') {
+                                keteranganInput.value = data.keterangan;
+                            }
+                        }
+                        if (judulInput && typeof data.judul === 'string') {
+                            if (!judulInput.value || judulInput.value.trim() === '') {
+                                judulInput.value = data.judul;
+                            }
+                        }
+
+                        setStatus('Struk terbaca. Form sudah terisi otomatis.', 'success');
+                    } catch (e) {
+                        if (e && e.name === 'AbortError') {
+                            return;
+                        }
+                        setStatus('Gagal membaca struk. Coba lagi.', 'error');
+                    }
+                });
+            }
+
+            // Anggaran pengeluaran dihapus: tidak ada auto-fill jumlah berdasarkan kategori.
         });
     </script>
 @endsection

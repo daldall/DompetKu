@@ -37,33 +37,9 @@ class CategoryController extends Controller
         $kategori->ikon = $request->ikon;
         $kategori->warna = $request->warna;
 
-        if ($request->saldo) {
-            $kategori->saldo = $request->saldo;
-        } else {
-            $kategori->saldo = 0;
-        }
+        $kategori->saldo = 0;
 
         $kategori->save();
-
-        // Catat riwayat "Saldo Awal" hanya jika ada saldo/anggaran
-        if ($kategori->saldo > 0) {
-            $transaksi = new \App\Models\Transaction();
-            $transaksi->user_id = Auth::user()->id;
-            $transaksi->category_id = $kategori->id;
-            $transaksi->judul = 'Saldo Awal - ' . $kategori->nama_kategori;
-            $transaksi->tipe = $kategori->warna == 'success' ? 'pemasukan' : 'pengeluaran';
-            $transaksi->jumlah = $kategori->saldo;
-            $transaksi->tanggal = date('Y-m-d');
-            $transaksi->keterangan = 'Saldo awal saat pembuatan kategori';
-            $transaksi->save();
-
-            // Jika kategori ini adalah kategori pengeluaran (anggaran),
-            // maka anggaran awal dianggap sudah "mengunci" uang tersebut,
-            // sehingga saldo kategori pemasukan harus ikut berkurang.
-            if ($kategori->warna === 'danger') {
-                $this->potongSaldoKategoriPemasukan(Auth::user()->id, $kategori->saldo);
-            }
-        }
 
         return redirect()->route('kategori.index')->with('success', 'Kategori berhasil ditambahkan.');
     }
@@ -98,13 +74,9 @@ class CategoryController extends Controller
         $kategori->ikon = $request->ikon;
         $kategori->warna = $request->warna;
 
-        // Kalau merah berarti pengeluaran
-        if ($request->warna == 'danger') {
-            if ($request->saldo) {
-                $kategori->saldo = $request->saldo;
-            } else {
-                $kategori->saldo = 0;
-            }
+        // Anggaran pengeluaran tidak digunakan lagi.
+        if ($request->warna === 'danger') {
+            $kategori->saldo = 0;
         }
 
         $kategori->save();

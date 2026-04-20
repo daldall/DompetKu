@@ -81,7 +81,7 @@
                                             <i class="bi bi-arrow-up-circle-fill text-danger fs-5"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-semibold">Pengeluaran / Anggaran</div>
+                                            <div class="fw-semibold">Pengeluaran</div>
                                             <small class="text-muted">Uang yang keluar (contoh: belanja)</small>
                                         </div>
                                         <i
@@ -91,17 +91,6 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3 {{ old('warna', $kategori->warna) === 'danger' ? '' : 'd-none' }}" id="saldo-wrapper">
-                        <label for="saldo" class="form-label fw-semibold">Anggaran (Rp)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-cash-stack"></i></span>
-                            <input type="number" id="saldo" name="saldo"
-                                value="{{ old('saldo', $kategori->warna === 'danger' ? $kategori->saldo : 0) }}"
-                                min="0" class="form-control" placeholder="Contoh: 2000000">
-                        </div>
-                        <div class="form-text">Atur anggaran untuk kategori pengeluaran ini.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -149,14 +138,6 @@
                 if (checkIcon) checkIcon.classList.remove('d-none');
 
                 document.getElementById('warna').value = warna;
-
-                // Tampilkan/sembunyikan input anggaran
-                const saldoWrapper = document.getElementById('saldo-wrapper');
-                if (warna === 'danger') {
-                    saldoWrapper.classList.remove('d-none');
-                } else {
-                    saldoWrapper.classList.add('d-none');
-                }
             });
         });
     </script>

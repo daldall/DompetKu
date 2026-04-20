@@ -190,9 +190,15 @@ class TransactionController extends Controller
 
         // Cek saldo kalau yg baru adalah pengeluaran
         if ($request->tipe == 'pengeluaran') {
-            // Hitung ulang saldo dgn transaksi ini dianggap 0 dulu (udah dicancel diatas / exclude)
-            $total_masuk = Transaction::where('user_id', $user_id)->where('tipe', 'pemasukan')->where('id', '!=', $transaksi->id)->sum('jumlah');
-            $total_keluar = Transaction::where('user_id', $user_id)->where('tipe', 'pengeluaran')->where('id', '!=', $transaksi->id)->sum('jumlah');
+            $total_masuk = Transaction::where('user_id', $user_id)
+                ->where('tipe', 'pemasukan')
+                ->where('id', '!=', $transaksi->id)
+                ->sum('jumlah');
+
+            $total_keluar = Transaction::where('user_id', $user_id)
+                ->where('tipe', 'pengeluaran')
+                ->where('id', '!=', $transaksi->id)
+                ->sum('jumlah');
 
             $tanggal = Carbon::parse($request->tanggal);
             $awal_bulan = $tanggal->copy()->startOfMonth()->toDateString();
@@ -200,8 +206,8 @@ class TransactionController extends Controller
 
             $total_keluar_bulan_ini = Transaction::where('user_id', $user_id)
                 ->where('tipe', 'pengeluaran')
-                ->where('id', '!=', $transaksi->id)
                 ->whereBetween('tanggal', [$awal_bulan, $akhir_bulan])
+                ->where('id', '!=', $transaksi->id)
                 ->sum('jumlah');
 
             $kelipatan_lama = floor($total_keluar_bulan_ini / 1000000);
@@ -212,25 +218,8 @@ class TransactionController extends Controller
                 $notif_pengeluaran = "Peringatan: Total pengeluaran Anda bulan ini telah mencapai Rp {$rupiah}. Harap perhatikan keuangan Anda!";
             }
 
-            // + kalo dia asalnya pemasukan, berarti tadi saldo belum berkurang di DB transaksi
             $sisa_saldo = $total_masuk - $total_keluar;
-
             if ($sisa_saldo < $request->jumlah) {
-                // Balikin lg kategori yg lama kalau tadi sempet dikurangin / ditambah
-                if ($transaksi->tipe == 'pemasukan') {
-                    $kategori_lama = Category::find($transaksi->category_id);
-                    if ($kategori_lama) {
-                        $kategori_lama->saldo = $kategori_lama->saldo + $transaksi->jumlah;
-                        $kategori_lama->save();
-                    }
-                } else {
-                    $kategori_balik = Category::where('user_id', $user_id)->where('warna', 'success')->orderBy('id', 'desc')->first();
-                    if ($kategori_balik) {
-                        $kategori_balik->saldo = $kategori_balik->saldo - $transaksi->jumlah;
-                        $kategori_balik->save();
-                    }
-                }
-
                 return redirect()->back()->withInput()->with('error', 'Saldo pemasukan tidak cukup!');
             }
 
@@ -293,17 +282,157 @@ class TransactionController extends Controller
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
     }
     
-    public function uploadStruk(Request $request)
+    // Endpoint untuk upload struk dan ekstrak total dengan Gemini
+    public function scanStruk(Request $request)
     {
         $request->validate(
             [
-                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp|max:5120',
+                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp,avif,heic,heif|max:5120',
             ],
             [
                 'image.required' => 'Foto struk wajib diupload.',
                 'image.file' => 'File struk tidak valid.',
                 'image.image' => 'File harus berupa gambar.',
-                'image.mimes' => 'Format gambar harus JPG/PNG/WEBP.',
+                'image.mimes' => 'Format gambar harus JPG/JPEG/PNG/WEBP/AVIF/HEIC.',
+                'image.max' => 'Ukuran gambar maksimal 5MB.',
+            ]
+        );
+
+        $apiKey = config('services.gemini.key');
+        if (!$apiKey) {
+            return response()->json([
+                'message' => 'GEMINI_API_KEY belum di-set.',
+            ], 500);
+        }
+
+        $image = $request->file('image');
+        $imageData = base64_encode(file_get_contents($image->getRealPath()));
+
+        $prompt = 'Dari gambar struk/bukti transaksi ini (bisa struk kasir atau struk digital seperti DANA/OVO/GoPay/transfer), tentukan:
+1) apakah ini pemasukan atau pengeluaran.
+2) nominal yang benar-benar terjadi (nominal utama transaksi). Abaikan subtotal, pajak, saldo, cashback, diskon, dan rincian item.
+3) deskripsi singkat (merchant/sumber + konteks seperlunya).
+
+Aturan penentuan tipe:
+- "pengeluaran" jika user membayar/keluar uang (TOTAL BAYAR, GRAND TOTAL, AMOUNT PAID, PAYMENT, DEBIT, PURCHASE, dsb).
+- "pemasukan" jika user menerima uang (TRANSFER MASUK, RECEIVED, INCOMING, REFUND, CASHBACK, TOP UP masuk, PENERIMAAN, dsb).
+
+Jawab HANYA dalam format JSON persis seperti ini:
+{"tipe":"pengeluaran","jumlah":50000,"judul":"Merchant","keterangan":"..."}
+
+Catatan:
+- "tipe" harus "pemasukan" atau "pengeluaran".
+- "jumlah" harus angka bulat tanpa simbol mata uang, tanpa titik/koma pemisah.
+- "judul" max 60 karakter.
+- "keterangan" max 200 karakter.';
+
+        $model = config('services.gemini.model', 'gemini-1.5-flash');
+        $payload = [
+            'contents' => [
+                [
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => $prompt],
+                        [
+                            'inline_data' => [
+                                'mime_type' => $image->getMimeType(),
+                                'data' => $imageData,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        try {
+            [$response, $usedVersion, $usedModel] = $this->geminiGenerateContentWithFallbacks($apiKey, $model, $payload);
+        } catch (ConnectionException $e) {
+            logger()->error('Gemini connection error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Koneksi ke Gemini gagal: ' . $e->getMessage(),
+            ], 502);
+        }
+
+        if (!$response->successful()) {
+            $result = $response->json();
+            $providerMessage = data_get($result, 'error.message');
+            $status = $response->status();
+
+            $message = 'Gagal memindai struk via Gemini.';
+            if ($providerMessage) {
+                $message .= " ({$status}) {$providerMessage}";
+            } else {
+                $message .= " (HTTP {$status})";
+            }
+
+            if (isset($usedVersion, $usedModel)) {
+                $message .= " | Model: {$usedModel} | API: {$usedVersion}";
+            }
+
+            logger()->error('Gemini non-success response', [
+                'status' => $status,
+                'body' => $response->body(),
+                'used_version' => $usedVersion ?? null,
+                'used_model' => $usedModel ?? null,
+            ]);
+
+            return response()->json([
+                'message' => $message,
+            ], 502);
+        }
+
+        $result = $response->json();
+        $text = (string) data_get($result, 'candidates.0.content.parts.0.text', '');
+        $suggestion = $this->parseStrukSuggestionFromGeminiText($text);
+
+        if (!$suggestion) {
+            return response()->json([
+                'message' => 'AI tidak bisa membaca struk (format respons tidak valid).',
+                'raw' => $text,
+            ], 422);
+        }
+
+        $tipe = $suggestion['tipe'] ?? null;
+        $jumlah = $suggestion['jumlah'] ?? null;
+        $judul = $suggestion['judul'] ?? null;
+        $keterangan = $suggestion['keterangan'] ?? null;
+
+        if (!in_array($tipe, ['pemasukan', 'pengeluaran'], true)) {
+            $tipe = 'pengeluaran';
+        }
+
+        if (!is_int($jumlah) || $jumlah < 1 || $jumlah > 999999999999) {
+            return response()->json([
+                'message' => 'Nominal dari struk tidak valid.',
+                'raw' => $text,
+            ], 422);
+        }
+
+        $judul = is_string($judul) && trim($judul) !== '' ? trim($judul) : 'Struk';
+        $judul = mb_strimwidth($judul, 0, 60, '');
+
+        $keterangan = is_string($keterangan) ? trim($keterangan) : '';
+        $keterangan = mb_strimwidth($keterangan, 0, 200, '');
+
+        return response()->json([
+            'tipe' => $tipe,
+            'jumlah' => $jumlah,
+            'judul' => $judul,
+            'keterangan' => $keterangan,
+        ], 200);
+    }
+
+    public function uploadStruk(Request $request)
+    {
+        $request->validate(
+            [
+                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp,avif,heic,heif|max:5120',
+            ],
+            [
+                'image.required' => 'Foto struk wajib diupload.',
+                'image.file' => 'File struk tidak valid.',
+                'image.image' => 'File harus berupa gambar.',
+                'image.mimes' => 'Format gambar harus JPG/JPEG/PNG/WEBP/AVIF/HEIC.',
                 'image.max' => 'Ukuran gambar maksimal 5MB.',
             ]
         );
@@ -318,7 +447,7 @@ class TransactionController extends Controller
             }
             return redirect()->route('transaksi.index')->with('error', $message);
         }
-
+    
         $image = $request->file('image');
         $imageData = base64_encode(file_get_contents($image->getRealPath()));
 
@@ -505,11 +634,43 @@ class TransactionController extends Controller
     }
 
     /**
+     * @return array{tipe?:string,jumlah?:int,judul?:string,keterangan?:string}|null
+     */
+    private function parseStrukSuggestionFromGeminiText(string $text): ?array
+    {
+        $text = trim($text);
+
+        $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
+        $text = preg_replace('/\s*```$/', '', $text);
+
+        $decoded = json_decode($text, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+            return null;
+        }
+
+        $tipe = isset($decoded['tipe']) ? (string) $decoded['tipe'] : null;
+        $jumlah = $decoded['jumlah'] ?? null;
+        if (is_string($jumlah)) {
+            $digits = preg_replace('/\D/', '', $jumlah);
+            $jumlah = $digits === '' ? null : (int) $digits;
+        }
+
+        return [
+            'tipe' => $tipe,
+            'jumlah' => is_int($jumlah) ? $jumlah : null,
+            'judul' => isset($decoded['judul']) ? (string) $decoded['judul'] : null,
+            'keterangan' => isset($decoded['keterangan']) ? (string) $decoded['keterangan'] : null,
+        ];
+    }
+
+    /**
      * @return array{0:\Illuminate\Http\Client\Response,1:string,2:string} [response, apiVersion, model]
      */
     private function geminiGenerateContentWithFallbacks(string $apiKey, string $model, array $payload): array
     {
         $model = $this->normalizeGeminiModelName($model);
+
+        $hasInlineImage = (bool) preg_match('/"inline_data"\s*:/', json_encode($payload));
 
         // Try both API versions with the configured model
         foreach (['v1beta', 'v1'] as $version) {
@@ -518,13 +679,20 @@ class TransactionController extends Controller
                 return [$response, $version, $model];
             }
 
-            // If it's a transient error, keep going to fallbacks.
-            if (in_array($response->status(), [429, 500, 502, 503, 504], true)) {
+            $status = $response->status();
+
+            // If it's a transient error, keep going.
+            if (in_array($status, [429, 500, 502, 503, 504], true)) {
                 continue;
             }
 
-            // If it's not a 404, don't keep switching versions blindly
-            if ($response->status() !== 404) {
+            // Some models reject image inputs with 400; try other models/versions.
+            if ($status === 400 && $hasInlineImage) {
+                continue;
+            }
+
+            // If it's not a 404, don't keep switching versions blindly.
+            if ($status !== 404) {
                 return [$response, $version, $model];
             }
         }
@@ -608,9 +776,23 @@ class TransactionController extends Controller
             }
             $short = $this->normalizeGeminiModelName($name);
 
+            // Exclude variants that are clearly not for vision (e.g. tts previews)
+            if (stripos($short, 'tts') !== false) {
+                continue;
+            }
+
             $methods = (array) ($m['supportedGenerationMethods'] ?? []);
             if (!in_array('generateContent', $methods, true)) {
                 continue;
+            }
+
+            // Only keep models that can accept image inputs when the API provides modality info.
+            $inputModalities = (array) ($m['inputModalities'] ?? $m['supportedInputModalities'] ?? []);
+            if ($inputModalities) {
+                $upper = array_map(fn ($v) => strtoupper((string) $v), $inputModalities);
+                if (!in_array('IMAGE', $upper, true)) {
+                    continue;
+                }
             }
 
             $candidates[] = $short;

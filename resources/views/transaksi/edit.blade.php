@@ -68,10 +68,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div id="anggaran-info" class="form-text text-danger d-none">
-                            <i class="bi bi-info-circle me-1"></i>Anggaran kategori: <strong id="anggaran-amount">Rp
-                                0</strong>
-                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -116,25 +112,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const categorySelect = document.getElementById('category_id');
-            const jumlahInput = document.getElementById('jumlah');
-            const anggaranInfo = document.getElementById('anggaran-info');
-            const anggaranAmount = document.getElementById('anggaran-amount');
-
-            categorySelect.addEventListener('change', function() {
-                const selected = this.options[this.selectedIndex];
-                const warna = selected.getAttribute('data-warna');
-                const saldo = parseInt(selected.getAttribute('data-saldo')) || 0;
-
-                // Hanya auto-fill untuk kategori pengeluaran (warna danger) yang punya anggaran > 0
-                if (warna === 'danger' && saldo > 0) {
-                    jumlahInput.value = saldo;
-                    anggaranAmount.textContent = 'Rp ' + saldo.toLocaleString('id-ID');
-                    anggaranInfo.classList.remove('d-none');
-                } else {
-                    anggaranInfo.classList.add('d-none');
-                }
-            });
+            // Anggaran pengeluaran dihapus: tidak ada auto-fill jumlah berdasarkan kategori.
         });
     </script>
 @endsection

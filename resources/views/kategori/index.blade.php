@@ -47,8 +47,7 @@
                                                 class="fw-semibold {{ $kategori->saldo >= 0 ? 'text-success' : 'text-danger' }}">Rp
                                                 {{ number_format($kategori->saldo, 0, ',', '.') }}</span></small>
                                     @else
-                                        <small class="text-muted">Anggaran: <span class="fw-semibold text-danger">Rp
-                                                {{ number_format($kategori->saldo, 0, ',', '.') }}</span></small>
+                                        <small class="text-muted">Tipe: <span class="fw-semibold text-danger">Pengeluaran</span></small>
                                     @endif
                                 </div>
                             </div>
