@@ -39,4 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/target/{target}/nabung', [TargetController::class, 'nabung'])->name('target.nabung');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/offline', function () {
+        return view('modules.laravelpwa.offline');
+    });
 });
