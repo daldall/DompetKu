@@ -1,17 +1,29 @@
-const CACHE_NAME = "laravel-pwa-1776763915";
+const CACHE_NAME = "dompetku-pwa-static-1776763915";
 const OFFLINE_URL = "/offline.html";
 
+// Security: only cache truly static public assets.
+// Never pre-cache '/' because it can redirect to authenticated pages.
 const FILES_TO_CACHE = [
-    "/",
-    OFFLINE_URL
+    OFFLINE_URL,
+    "/manifest.json",
+    "/favicon.ico",
+    "/logo.png",
+    "/heroimage.jpeg",
+    "/icon-72x72.png",
+    "/icon-96x96.png",
+    "/icon-128x128.png",
+    "/icon-144x144.png",
+    "/icon-152x152.png",
+    "/icon-192x192.png",
+    "/icon-384x384.png",
+    "/icon-512x512.png",
 ];
 
 // Pre-cache critical resources
 self.addEventListener("install", (event) => {
     console.log('[Laravel PWA] Service Worker installing...');
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(FILES_TO_CACHE))
+        caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
     );
 });
 
@@ -41,108 +53,54 @@ self.addEventListener('message', (event) => {
 
 // Fetch strategy
 self.addEventListener("fetch", (event) => {
-
     const request = event.request;
+    const url = new URL(request.url);
 
-    // ✅ Never cache non-GET requests (fix Cache.put POST error)
+    // Never interfere with non-GET.
     if (request.method !== 'GET') {
-        event.respondWith(fetch(request));
         return;
     }
 
-    // ✅ Handle page navigation (offline fallback)
+    // Only handle same-origin requests.
+    if (url.origin !== self.location.origin) {
+        return;
+    }
+
+    // Navigation: network-first, offline fallback. Do NOT cache HTML pages.
     if (request.mode === "navigate") {
         event.respondWith(
-            fetch(request)
-                .catch(() => caches.match(OFFLINE_URL))
+            fetch(request).catch(() => caches.match(OFFLINE_URL))
         );
         return;
     }
 
-    // ✅ Cache-first for static assets
-    if (
+    // Cache-first for static assets only.
+    const isStaticAsset = (
         request.destination === "style" ||
         request.destination === "script" ||
         request.destination === "image" ||
         request.destination === "font"
-    ) {
-        event.respondWith(
-            caches.match(request)
-                .then(cached => {
-                    return cached || fetch(request).then(response => {
-                        return caches.open(CACHE_NAME).then(cache => {
-                            cache.put(request, response.clone());
-                            return response;
-                        });
-                    });
-                })
-        );
+    );
+
+    if (!isStaticAsset) {
+        // Security: do not cache other requests (HTML, JSON, etc.)
         return;
     }
 
-    // ✅ Default: network-first with cache fallback
     event.respondWith(
-        fetch(request)
-            .then(response => {
-                return caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, response.clone());
+        caches.match(request).then((cached) => {
+            if (cached) return cached;
+
+            return fetch(request).then((response) => {
+                // Only cache successful basic responses.
+                if (!response || response.status !== 200 || response.type !== 'basic') {
                     return response;
-                });
-            })
-            .catch(async (error) => {
-                // Retry failed API requests if Background Sync is supported
-                if (request.method === 'POST' && 'SyncManager' in self) {
-                    // We can't easily queue it here because we can't access IndexedDB easily without a library or boilerplate
-                    // But we've already handled form submissions in background-sync.js
                 }
-                return caches.match(request);
-            })
+
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+                return response;
+            });
+        })
     );
 });
-
-// Background Sync
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'laravel-pwa-sync') {
-        event.waitUntil(syncRequests());
-    }
-});
-
-async function syncRequests() {
-    const db = await openDB();
-    const tx = db.transaction('offline-requests', 'readonly');
-    const store = tx.objectStore('offline-requests');
-    const requests = await getAllRequests(store);
-
-    for (const req of requests) {
-        try {
-            const response = await fetch(req.url, {
-                method: req.method,
-                headers: req.headers,
-                body: req.body
-            });
-
-            if (response.ok) {
-                const deleteTx = db.transaction('offline-requests', 'readwrite');
-                deleteTx.objectStore('offline-requests').delete(req.id);
-            }
-        } catch (err) {
-            console.error('[Laravel PWA] Sync failed for:', req.url, err);
-        }
-    }
-}
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('laravel-pwa-sync', 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-function getAllRequests(store) {
-    return new Promise((resolve, reject) => {
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}

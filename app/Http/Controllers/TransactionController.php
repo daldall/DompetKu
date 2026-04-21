@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiUsageLog;
 use App\Models\Category;
 use App\Models\Transaction;
 use Carbon\Carbon;
@@ -12,6 +13,15 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
+    private function logAiUsage(array $attributes): void
+    {
+        try {
+            AiUsageLog::query()->create($attributes);
+        } catch (\Throwable $e) {
+            logger()->warning('Failed to write ai_usage_logs', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function index()
     {
         $transactions = Transaction::with('category')
@@ -348,6 +358,18 @@ Catatan:
             [$response, $usedVersion, $usedModel] = $this->geminiGenerateContentWithFallbacks($apiKey, $model, $payload);
         } catch (ConnectionException $e) {
             logger()->error('Gemini connection error', ['error' => $e->getMessage()]);
+
+            $this->logAiUsage([
+                'user_id' => Auth::id(),
+                'feature' => 'scan_struk',
+                'provider' => 'gemini',
+                'model' => $model,
+                'api_version' => null,
+                'status_code' => null,
+                'success' => false,
+                'error_type' => 'connection',
+            ]);
+
             return response()->json([
                 'message' => 'Koneksi ke Gemini gagal: ' . $e->getMessage(),
             ], 502);
@@ -376,6 +398,17 @@ Catatan:
                 'used_model' => $usedModel ?? null,
             ]);
 
+            $this->logAiUsage([
+                'user_id' => Auth::id(),
+                'feature' => 'scan_struk',
+                'provider' => 'gemini',
+                'model' => $usedModel ?? $model,
+                'api_version' => $usedVersion ?? null,
+                'status_code' => $status,
+                'success' => false,
+                'error_type' => 'provider',
+            ]);
+
             return response()->json([
                 'message' => $message,
             ], 502);
@@ -386,6 +419,17 @@ Catatan:
         $suggestion = $this->parseStrukSuggestionFromGeminiText($text);
 
         if (!$suggestion) {
+            $this->logAiUsage([
+                'user_id' => Auth::id(),
+                'feature' => 'scan_struk',
+                'provider' => 'gemini',
+                'model' => $usedModel ?? $model,
+                'api_version' => $usedVersion ?? null,
+                'status_code' => (int) $response->status(),
+                'success' => false,
+                'error_type' => 'parse',
+            ]);
+
             return response()->json([
                 'message' => 'AI tidak bisa membaca struk (format respons tidak valid).',
                 'raw' => $text,
@@ -402,6 +446,17 @@ Catatan:
         }
 
         if (!is_int($jumlah) || $jumlah < 1 || $jumlah > 999999999999) {
+            $this->logAiUsage([
+                'user_id' => Auth::id(),
+                'feature' => 'scan_struk',
+                'provider' => 'gemini',
+                'model' => $usedModel ?? $model,
+                'api_version' => $usedVersion ?? null,
+                'status_code' => (int) $response->status(),
+                'success' => false,
+                'error_type' => 'validation',
+            ]);
+
             return response()->json([
                 'message' => 'Nominal dari struk tidak valid.',
                 'raw' => $text,
@@ -413,6 +468,17 @@ Catatan:
 
         $keterangan = is_string($keterangan) ? trim($keterangan) : '';
         $keterangan = mb_strimwidth($keterangan, 0, 200, '');
+
+        $this->logAiUsage([
+            'user_id' => Auth::id(),
+            'feature' => 'scan_struk',
+            'provider' => 'gemini',
+            'model' => $usedModel ?? $model,
+            'api_version' => $usedVersion ?? null,
+            'status_code' => (int) $response->status(),
+            'success' => true,
+            'error_type' => null,
+        ]);
 
         return response()->json([
             'tipe' => $tipe,
@@ -478,6 +544,17 @@ Catatan:
             $message = 'Koneksi ke Gemini gagal: ' . $e->getMessage();
             logger()->error('Gemini connection error', ['error' => $e->getMessage()]);
 
+            $this->logAiUsage([
+                'user_id' => $userId,
+                'feature' => 'upload_struk',
+                'provider' => 'gemini',
+                'model' => $model,
+                'api_version' => null,
+                'status_code' => null,
+                'success' => false,
+                'error_type' => 'connection',
+            ]);
+
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 502);
             }
@@ -514,6 +591,17 @@ Catatan:
                 'used_model' => $usedModel ?? null,
             ]);
 
+            $this->logAiUsage([
+                'user_id' => $userId,
+                'feature' => 'upload_struk',
+                'provider' => 'gemini',
+                'model' => $usedModel ?? $model,
+                'api_version' => $usedVersion ?? null,
+                'status_code' => $status,
+                'success' => false,
+                'error_type' => 'provider',
+            ]);
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => $message,
@@ -530,6 +618,18 @@ Catatan:
 
         if ($total < 1 || $total > 999999999999) {
             $message = 'Total dari struk tidak valid.';
+
+            $this->logAiUsage([
+                'user_id' => $userId,
+                'feature' => 'upload_struk',
+                'provider' => 'gemini',
+                'model' => $usedModel ?? $model,
+                'api_version' => $usedVersion ?? null,
+                'status_code' => (int) $response->status(),
+                'success' => false,
+                'error_type' => 'validation',
+            ]);
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => $message,
@@ -588,6 +688,17 @@ Catatan:
         $transaksi->tanggal = Carbon::now()->toDateString();
         $transaksi->keterangan = 'Dibuat otomatis dari upload struk (Gemini)';
         $transaksi->save();
+
+        $this->logAiUsage([
+            'user_id' => $userId,
+            'feature' => 'upload_struk',
+            'provider' => 'gemini',
+            'model' => $usedModel ?? $model,
+            'api_version' => $usedVersion ?? null,
+            'status_code' => (int) $response->status(),
+            'success' => true,
+            'error_type' => null,
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([

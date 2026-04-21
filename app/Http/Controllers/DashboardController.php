@@ -11,6 +11,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        if (Auth::user()?->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         $user_id = Auth::user()->id;
 
         // hitung pemasukan sepanjang waktu

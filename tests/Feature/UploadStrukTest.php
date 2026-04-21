@@ -133,6 +133,13 @@ class UploadStrukTest extends TestCase
             'jumlah' => 50000,
         ]);
 
+        $this->assertDatabaseHas('ai_usage_logs', [
+            'user_id' => $user->id,
+            'feature' => 'upload_struk',
+            'provider' => 'gemini',
+            'success' => 1,
+        ]);
+
         $kategoriPemasukan->refresh();
         $this->assertSame(50000, (int) $kategoriPemasukan->saldo);
     }

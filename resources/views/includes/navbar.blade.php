@@ -11,6 +11,14 @@
 
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                @if (Auth::user()?->isAdmin())
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->is('admin*') ? 'active fw-semibold text-dark border-bottom border-2 border-success' : 'text-secondary' }}"
+                            href="{{ route('admin.dashboard') }}">
+                            <i class="bi bi-shield-lock me-1"></i> Admin
+                        </a>
+                    </li>
+                @endif
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('dashboard') ? 'active fw-semibold text-dark border-bottom border-2 border-success' : 'text-secondary' }}"
                         href="{{ route('dashboard') }}">

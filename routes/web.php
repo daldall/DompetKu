@@ -6,6 +6,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RiwayatController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TargetController;
+use App\Http\Controllers\Admin\AdminAiUsageController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminDefaultCategoryController;
+use App\Http\Controllers\Admin\AdminUserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +26,17 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::prefix('admin')->name('admin.')->middleware('is_admin')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/ai-usage', [AdminAiUsageController::class, 'index'])->name('ai-usage.index');
+
+        Route::get('/default-kategori', [AdminDefaultCategoryController::class, 'index'])->name('default-kategori.index');
+        Route::get('/default-kategori/create', [AdminDefaultCategoryController::class, 'create'])->name('default-kategori.create');
+        Route::post('/default-kategori', [AdminDefaultCategoryController::class, 'store'])->name('default-kategori.store');
+        Route::delete('/default-kategori/{defaultKategori}', [AdminDefaultCategoryController::class, 'destroy'])->name('default-kategori.destroy');
+    });
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');

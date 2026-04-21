@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\DefaultCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +30,19 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ];
 
-        User::create($data);
+        $user = User::create($data);
+
+        // Copy kategori default untuk user baru (template dari admin)
+        $defaultCategories = DefaultCategory::query()->get(['nama_kategori', 'ikon', 'warna']);
+        foreach ($defaultCategories as $dc) {
+            Category::query()->create([
+                'user_id' => $user->id,
+                'nama_kategori' => $dc->nama_kategori,
+                'ikon' => $dc->ikon,
+                'warna' => $dc->warna,
+                'saldo' => 0,
+            ]);
+        }
 
         return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan login.');
     }
