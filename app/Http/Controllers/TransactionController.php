@@ -297,13 +297,24 @@ class TransactionController extends Controller
     {
         $request->validate(
             [
-                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp,avif,heic,heif|max:5120',
+                // Jangan pakai rule `image` karena itu membatasi mime tertentu dan sering gagal untuk HEIC/HEIF.
+                // Untuk fitur ini, cukup pastikan file ter-upload dengan benar dan berupa gambar.
+                'image' => [
+                    'required',
+                    'file',
+                    'max:5120',
+                    function (string $attribute, $value, \Closure $fail): void {
+                        $mime = $value?->getMimeType();
+                        if (!is_string($mime) || !str_starts_with($mime, 'image/')) {
+                            $fail('File harus berupa gambar.');
+                        }
+                    },
+                ],
             ],
             [
                 'image.required' => 'Foto struk wajib diupload.',
                 'image.file' => 'File struk tidak valid.',
-                'image.image' => 'File harus berupa gambar.',
-                'image.mimes' => 'Format gambar harus JPG/JPEG/PNG/WEBP/AVIF/HEIC.',
+                'image.uploaded' => 'Gagal upload gambar (biasanya karena ukuran melebihi batas server). Coba foto ulang/kompres atau gunakan gambar yang lebih kecil.',
                 'image.max' => 'Ukuran gambar maksimal 5MB.',
             ]
         );
@@ -492,13 +503,23 @@ Catatan:
     {
         $request->validate(
             [
-                'image' => 'required|file|image|mimes:jpeg,png,jpg,webp,avif,heic,heif|max:5120',
+                // Sama seperti scanStruk: hindari rule `image` agar HEIC/HEIF tidak gagal validasi.
+                'image' => [
+                    'required',
+                    'file',
+                    'max:5120',
+                    function (string $attribute, $value, \Closure $fail): void {
+                        $mime = $value?->getMimeType();
+                        if (!is_string($mime) || !str_starts_with($mime, 'image/')) {
+                            $fail('File harus berupa gambar.');
+                        }
+                    },
+                ],
             ],
             [
                 'image.required' => 'Foto struk wajib diupload.',
                 'image.file' => 'File struk tidak valid.',
-                'image.image' => 'File harus berupa gambar.',
-                'image.mimes' => 'Format gambar harus JPG/JPEG/PNG/WEBP/AVIF/HEIC.',
+                'image.uploaded' => 'Gagal upload gambar (biasanya karena ukuran melebihi batas server). Coba foto ulang/kompres atau gunakan gambar yang lebih kecil.',
                 'image.max' => 'Ukuran gambar maksimal 5MB.',
             ]
         );

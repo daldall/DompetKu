@@ -226,7 +226,20 @@
 
                         const data = await res.json().catch(() => null);
                         if (!res.ok || !data) {
-                            const msg = data && data.message ? data.message : 'Gagal membaca struk.';
+                            const firstError = (payload) => {
+                                const errors = payload && payload.errors ? payload.errors : null;
+                                if (!errors || typeof errors !== 'object') return null;
+                                const keys = Object.keys(errors);
+                                for (const key of keys) {
+                                    const arr = errors[key];
+                                    if (Array.isArray(arr) && arr.length > 0) return String(arr[0]);
+                                }
+                                return null;
+                            };
+
+                            const msg = (data && data.message ? data.message : null) || firstError(data) ||
+                                (res.status === 413 ? 'Ukuran upload terlalu besar. Coba gunakan gambar lebih kecil.' : null) ||
+                                'Gagal membaca struk.';
                             setStatus(msg, 'error');
                             return;
                         }
